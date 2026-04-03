@@ -1,0 +1,26 @@
+{
+  "name": "study-buddy-platform",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"cd services/user-service && npm run dev\" \"cd gateway && npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibrahimmahdy684/study-buddy-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ibrahimmahdy684/study-buddy-app/issues"
+  },
+  "homepage": "https://github.com/ibrahimmahdy684/study-buddy-app#readme",
+  "dependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.0"
+  }
+}
