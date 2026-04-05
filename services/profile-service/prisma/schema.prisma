@@ -1,0 +1,51 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// Academic year and university belong on the User service, not here.
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  bio       String?
+
+  studyPace          String?
+  studyMode          StudyMode?
+  preferredGroupSize Int?
+  studyStyle         String?
+
+  courses    Course[]
+  helpTopics HelpTopic[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum StudyMode {
+  ONLINE
+  IN_PERSON
+  BOTH
+}
+
+model Course {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  code      String?
+
+  @@index([profileId])
+}
+
+model HelpTopic {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  topic     String
+
+  @@index([profileId])
+}
