@@ -1,0 +1,42 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum StudyMode {
+  ONLINE
+  IN_PERSON
+  BOTH
+}
+
+model MatchProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  studyPace          String?
+  studyMode          StudyMode?
+  preferredGroupSize Int?
+  studyStyle         String?
+  courses            String[]           @default([])
+  topics             String[]           @default([])
+  availabilities     AvailabilitySlot[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model AvailabilitySlot {
+  id           String       @id @default(cuid())
+  profileId    String
+  profile      MatchProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int
+  startMinutes Int
+  endMinutes   Int
+
+  @@index([profileId])
+  @@index([dayOfWeek, startMinutes, endMinutes])
+}

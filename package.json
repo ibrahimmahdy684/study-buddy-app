@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"cd services/user-service && npm run dev\" \"cd gateway && npm run dev\""
+    "dev": "concurrently \"cd services/user-service && npm run dev\" \"cd gateway && npm run dev\"",
+    "dev:matching": "cd services/matching-service && npm run dev",
+    "dev:services": "concurrently \"cd services/user-service && npm run dev\" \"cd services/profile-service && npm start\" \"cd services/matching-service && npm run dev\""
   },
   "repository": {
     "type": "git",
