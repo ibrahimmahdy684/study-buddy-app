@@ -1,0 +1,28 @@
+{
+  "name": "matching-service",
+  "version": "1.0.0",
+  "description": "Study buddy matching service",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@apollo/server": "^5.5.0",
+    "@prisma/client": "^6.19.3",
+    "dotenv": "^17.4.0",
+    "graphql": "^16.13.2",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.3"
+  }
+}
