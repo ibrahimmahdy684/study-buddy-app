@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AvailabilitySlot {
+  id          String   @id @default(uuid())
+  userId      String   // references User in Auth service (no FK across services)
+  dayOfWeek   Int      // 0 = Sunday, 6 = Saturday
+  startTime   String   // "09:00" — stored as HH:MM string
+  endTime     String   // "11:00"
+  isRecurring Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, dayOfWeek, startTime, endTime]) // prevent exact duplicates
+  @@index([userId])
+  @@index([dayOfWeek])
+  @@map("availability_slots")
+}
