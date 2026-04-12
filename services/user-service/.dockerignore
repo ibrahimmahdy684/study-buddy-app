@@ -1,0 +1,4 @@
+# .dockerignore  (put this in each service folder)
+node_modules
+.env
+*.log

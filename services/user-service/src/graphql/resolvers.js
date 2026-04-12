@@ -1,5 +1,4 @@
 import { GraphQLError } from "graphql";
-
 import {
   registerUser,
   loginUser,
@@ -37,7 +36,6 @@ const ensureAuthenticated = (context) => {
   if (!context.authUser?.id) {
     throw authError();
   }
-
   return context.authUser.id;
 };
 
@@ -47,11 +45,9 @@ const throwServiceError = (error) => {
   if (statusCode === 401) {
     throw new GraphQLError(error.message, { extensions: { code: "UNAUTHENTICATED" } });
   }
-
   if (statusCode === 404) {
     throw new GraphQLError(error.message, { extensions: { code: "NOT_FOUND" } });
   }
-
   if (statusCode === 409) {
     throw new GraphQLError(error.message, { extensions: { code: "CONFLICT" } });
   }
@@ -67,7 +63,6 @@ export const resolvers = {
 
     me: async (_, __, context) => {
       const userId = ensureAuthenticated(context);
-
       try {
         return await getUserById(userId);
       } catch (error) {
@@ -82,11 +77,9 @@ export const resolvers = {
       if (!parsed.success) {
         throw validationError(parsed.error);
       }
-
       try {
         const { token, user } = await registerUser(parsed.data);
-        context.res.setHeader("Set-Cookie", buildAuthCookie(token));
-
+        context.res.setHeader("Set-Cookie", buildAuthCookie(token)); // ✅
         return {
           message: "Account created successfully",
           user,
@@ -101,13 +94,12 @@ export const resolvers = {
       if (!parsed.success) {
         throw validationError(parsed.error);
       }
-
       try {
         const { token, user } = await loginUser(parsed.data);
-        context.res.setHeader("Set-Cookie", buildAuthCookie(token));
-
+        context.res.setHeader("Set-Cookie", buildAuthCookie(token)); // ✅
         return {
           message: "Logged in successfully",
+          token,
           user,
         };
       } catch (error) {
@@ -116,8 +108,7 @@ export const resolvers = {
     },
 
     logout: (_, __, context) => {
-      context.res.setHeader("Set-Cookie", buildClearAuthCookie());
-
+      context.res.setHeader("Set-Cookie", buildClearAuthCookie()); // ✅
       return {
         success: true,
         message: "Logged out successfully",
@@ -127,11 +118,9 @@ export const resolvers = {
     updateMe: async (_, { input }, context) => {
       const userId = ensureAuthenticated(context);
       const parsed = updateUserSchema.safeParse(input);
-
       if (!parsed.success) {
         throw validationError(parsed.error);
       }
-
       try {
         return await updateUser(userId, parsed.data);
       } catch (error) {
@@ -141,11 +130,9 @@ export const resolvers = {
 
     deleteMe: async (_, __, context) => {
       const userId = ensureAuthenticated(context);
-
       try {
         await deleteUser(userId);
-        context.res.setHeader("Set-Cookie", buildClearAuthCookie());
-
+        context.res.setHeader("Set-Cookie", buildClearAuthCookie()); // ✅
         return {
           success: true,
           message: "Account deleted successfully",
