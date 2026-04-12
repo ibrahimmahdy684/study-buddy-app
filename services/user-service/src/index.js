@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import { ApolloServer } from "apollo-server";
-
 import { typeDefs } from "./graphql/typeDefs.js";
 import { resolvers } from "./graphql/resolvers.js";
 import { buildContext } from "./graphql/context.js";
@@ -14,7 +13,7 @@ const PORT = Number(process.env.PORT || 4001);
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req, res }) => buildContext(req, res),
+  context: ({ req, res }) => buildContext(req, res), // ✅ pass both
 });
 
 const start = async () => {
