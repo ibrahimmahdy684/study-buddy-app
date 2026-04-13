@@ -1,4 +1,5 @@
 import { Kafka } from 'kafkajs';
+import prisma from '../db/client.js';
 import 'dotenv/config';
 
 const kafka = new Kafka({
@@ -9,19 +10,13 @@ const kafka = new Kafka({
 const consumer = kafka.consumer({ groupId: process.env.KAFKA_GROUP_ID });
 
 const handlers = {
-  // When a new user is created in the Auth service,
-  // log it — no slots created yet, user will add their own
   'user.created': async ({ payload }) => {
     const { userId, name } = payload;
     console.log(`📥 [user.created] New user registered: ${name} (${userId})`);
-    // Optionally seed default empty state or just acknowledge
   },
 
-  // When a user is deleted, clean up their availability data
   'user.deleted': async ({ payload }) => {
     const { userId } = payload;
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
     await prisma.availabilitySlot.deleteMany({ where: { userId } });
     console.log(`🗑️  [user.deleted] Cleared all slots for user ${userId}`);
   },
@@ -29,10 +24,8 @@ const handlers = {
 
 export const startConsumer = async () => {
   await consumer.connect();
-
-  // Subscribe to all relevant topics
-  await consumer.subscribe({ topic: 'user.created',  fromBeginning: false });
-  await consumer.subscribe({ topic: 'user.deleted',  fromBeginning: false });
+  await consumer.subscribe({ topic: 'user.created', fromBeginning: false });
+  await consumer.subscribe({ topic: 'user.deleted', fromBeginning: false });
 
   await consumer.run({
     eachMessage: async ({ topic, message }) => {

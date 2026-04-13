@@ -7,17 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AvailabilitySlot {
-  id          String   @id @default(uuid())
-  userId      String   // references User in Auth service (no FK across services)
-  dayOfWeek   Int      // 0 = Sunday, 6 = Saturday
-  startTime   String   // "09:00" — stored as HH:MM string
-  endTime     String   // "11:00"
-  isRecurring Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
 
-  @@unique([userId, dayOfWeek, startTime, endTime]) // prevent exact duplicates
+model AvailabilitySlot {
+  id          String    @id @default(uuid())
+  userId      String
+  dayOfWeek   DayOfWeek
+  startTime   DateTime  @db.Time
+  endTime     DateTime  @db.Time
+  isRecurring Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, dayOfWeek, startTime, endTime])
   @@index([userId])
   @@index([dayOfWeek])
   @@map("availability_slots")

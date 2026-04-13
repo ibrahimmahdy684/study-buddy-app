@@ -7,7 +7,6 @@ import { startConsumer, disconnectConsumer }   from './kafka/consumer.js';
 import prisma from './db/client.js';
 import 'dotenv/config';
 
-// ─── Graceful Shutdown ────────────────────────────────────────────────────────
 const shutdown = async () => {
   console.log('\n🛑 Shutting down availability service...');
   await disconnectProducer();
@@ -19,19 +18,13 @@ const shutdown = async () => {
 process.on('SIGINT',  shutdown);
 process.on('SIGTERM', shutdown);
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
 const start = async () => {
-  // 1. verify DB connection
   await prisma.$connect();
   console.log('✅ Connected to NeonDB via Prisma');
 
-  // 2. connect Kafka producer
   await connectProducer();
-
-  // 3. start Kafka consumer
   await startConsumer();
 
-  // 4. start Apollo GraphQL server
   const server = new ApolloServer({ typeDefs, resolvers });
   const { url } = await startStandaloneServer(server, {
     listen: { port: Number(process.env.PORT) || 4002 },

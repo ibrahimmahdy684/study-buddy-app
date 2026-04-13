@@ -1,84 +1,101 @@
 import prisma from '../db/client.js';
 import { publishEvent } from '../kafka/producer.js';
 
-// ─── Private Helpers ────────────────────────────────────────────────────────
+// ─── Time Helpers ─────────────────────────────────────────────────────────────
 
-const validateTimeRange = (startTime, endTime) => {
-  if (startTime >= endTime) {
-    throw new Error('start_time must be before end_time');
-  }
-};
-
-const validateDayOfWeek = (day) => {
-  if (day < 0 || day > 6) {
-    throw new Error('dayOfWeek must be between 0 (Sunday) and 6 (Saturday)');
-  }
-};
-
-const validateTimeFormat = (time) => {
+// Validates and converts "HH:MM" string to a DateTime Prisma can store as @db.Time
+const parseTime = (time) => {
   const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
   if (!timeRegex.test(time)) {
     throw new Error(`Invalid time format: "${time}". Use HH:MM (e.g. "09:00")`);
+  }
+  return new Date(`1970-01-01T${time}:00.000Z`);
+};
+
+// Converts DateTime from DB back to "HH:MM" string for GraphQL response
+const formatTime = (date) => {
+  return new Date(date).toISOString().substring(11, 16);
+};
+
+// Formats a full slot object — converts DateTime fields back to HH:MM strings
+const formatSlot = (slot) => ({
+  ...slot,
+  startTime: formatTime(slot.startTime),
+  endTime:   formatTime(slot.endTime),
+});
+
+// ─── Validation Helpers ───────────────────────────────────────────────────────
+
+const validateTimeRange = (startTime, endTime) => {
+  if (startTime >= endTime) {
+    throw new Error('startTime must be before endTime');
   }
 };
 
 const hasOverlap = async (userId, dayOfWeek, startTime, endTime, excludeId = null) => {
   const existing = await prisma.availabilitySlot.findMany({
     where: {
-      userId,
+      userId, 
       dayOfWeek,
       NOT: excludeId ? { id: excludeId } : undefined,
     },
   });
 
   return existing.some(
-    (slot) => slot.startTime < endTime && slot.endTime > startTime
+    (slot) =>
+      slot.startTime < new Date(`1970-01-01T${endTime}:00.000Z`) &&
+      slot.endTime   > new Date(`1970-01-01T${startTime}:00.000Z`)
   );
 };
 
-// ─── Queries ─────────────────────────────────────────────────────────────────
+// ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const getByUser = async (userId) => {
-  return prisma.availabilitySlot.findMany({
+  const slots = await prisma.availabilitySlot.findMany({
     where: { userId },
     orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
   });
+  return slots.map(formatSlot);
 };
 
 export const getById = async (id) => {
   const slot = await prisma.availabilitySlot.findUnique({ where: { id } });
   if (!slot) throw new Error(`Slot with id "${id}" not found`);
-  return slot;
+  return formatSlot(slot);
 };
 
 export const findOverlappingUserIds = async ({ userId, dayOfWeek, startTime, endTime }) => {
+  const parsedStart = parseTime(startTime);
+  const parsedEnd   = parseTime(endTime);
+
   const slots = await prisma.availabilitySlot.findMany({
     where: {
-      NOT: { userId },
+      NOT:      { userId },
       dayOfWeek,
-      startTime: { lte: startTime },
-      endTime:   { gte: endTime },
+      startTime: { lte: parsedStart },
+      endTime:   { gte: parsedEnd },
     },
   });
 
-  // deduplicate userIds
   return [...new Set(slots.map((s) => s.userId))];
 };
 
 export const findOverlappingDetailed = async ({ userId, dayOfWeek, startTime, endTime }) => {
+  const parsedStart = parseTime(startTime);
+  const parsedEnd   = parseTime(endTime);
+
   const slots = await prisma.availabilitySlot.findMany({
     where: {
-      NOT: { userId },
+      NOT:      { userId },
       dayOfWeek,
-      startTime: { lte: startTime },
-      endTime:   { gte: endTime },
+      startTime: { lte: parsedStart },
+      endTime:   { gte: parsedEnd },
     },
   });
 
-  // group slots by userId
   const grouped = slots.reduce((acc, slot) => {
     if (!acc[slot.userId]) acc[slot.userId] = [];
-    acc[slot.userId].push(slot);
+    acc[slot.userId].push(formatSlot(slot));
     return acc;
   }, {});
 
@@ -91,43 +108,48 @@ export const findOverlappingDetailed = async ({ userId, dayOfWeek, startTime, en
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export const addSlot = async ({ userId, dayOfWeek, startTime, endTime, isRecurring = true }) => {
-  // Validate inputs
-  validateDayOfWeek(dayOfWeek);
-  validateTimeFormat(startTime);
-  validateTimeFormat(endTime);
+  // Validate time format and range
+  const parsedStart = parseTime(startTime);
+  const parsedEnd   = parseTime(endTime);
   validateTimeRange(startTime, endTime);
 
-  // Check for overlaps
+  // Check for overlapping slots
   if (await hasOverlap(userId, dayOfWeek, startTime, endTime)) {
     throw new Error('This slot overlaps with an existing availability window');
   }
 
   const slot = await prisma.availabilitySlot.create({
-    data: { userId, dayOfWeek, startTime, endTime, isRecurring },
+    data: {
+      userId,
+      dayOfWeek,
+      startTime:   parsedStart,
+      endTime:     parsedEnd,
+      isRecurring,
+    },
   });
 
   await publishEvent('availability.updated', {
     userId,
     action: 'added',
-    slot,
+    slot: formatSlot(slot),
   });
 
-  return slot;
+  return formatSlot(slot);
 };
 
 export const updateSlot = async ({ id, startTime, endTime, isRecurring }) => {
   const existing = await prisma.availabilitySlot.findUnique({ where: { id } });
   if (!existing) throw new Error(`Slot with id "${id}" not found`);
 
-  const newStart = startTime ?? existing.startTime;
-  const newEnd   = endTime   ?? existing.endTime;
+  const newStart = startTime ?? formatTime(existing.startTime);
+  const newEnd   = endTime   ?? formatTime(existing.endTime);
 
-  // Validate new values
-  validateTimeFormat(newStart);
-  validateTimeFormat(newEnd);
+  // Validate new time values
+  const parsedStart = parseTime(newStart);
+  const parsedEnd   = parseTime(newEnd);
   validateTimeRange(newStart, newEnd);
 
-  // Check overlaps excluding this slot
+  // Check for overlaps excluding this slot
   if (await hasOverlap(existing.userId, existing.dayOfWeek, newStart, newEnd, id)) {
     throw new Error('Updated slot overlaps with an existing availability window');
   }
@@ -135,8 +157,8 @@ export const updateSlot = async ({ id, startTime, endTime, isRecurring }) => {
   const slot = await prisma.availabilitySlot.update({
     where: { id },
     data: {
-      startTime:   newStart,
-      endTime:     newEnd,
+      startTime:   parsedStart,
+      endTime:     parsedEnd,
       isRecurring: isRecurring ?? existing.isRecurring,
     },
   });
@@ -144,10 +166,10 @@ export const updateSlot = async ({ id, startTime, endTime, isRecurring }) => {
   await publishEvent('availability.updated', {
     userId: slot.userId,
     action: 'updated',
-    slot,
+    slot:   formatSlot(slot),
   });
 
-  return slot;
+  return formatSlot(slot);
 };
 
 export const deleteSlot = async (id) => {
@@ -157,9 +179,9 @@ export const deleteSlot = async (id) => {
   await prisma.availabilitySlot.delete({ where: { id } });
 
   await publishEvent('availability.updated', {
-    userId:   slot.userId,
-    action:   'deleted',
-    slotId:   id,
+    userId:  slot.userId,
+    action:  'deleted',
+    slotId:  id,
   });
 
   return true;
