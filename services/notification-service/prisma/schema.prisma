@@ -1,0 +1,23 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "match_found", "buddy_request", "session_invitation", "session_reminder"
+  title     String
+  message   String
+  relatedId String?  // ID of the related entity (match, request, session, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([read])
+}
