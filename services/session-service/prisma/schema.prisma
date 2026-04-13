@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionType {
+  ONLINE
+  IN_PERSON
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum ParticipantRole {
+  CREATOR
+  PARTICIPANT
+}
+
+model StudySession {
+  id          String   @id @default(uuid())
+  topic       String   @db.VarChar(255)
+  description String?
+  date        DateTime
+  /// Duration in minutes
+  duration    Int
+  type        SessionType
+  status      SessionStatus @default(SCHEDULED)
+  
+  creatorId   String
+  
+  // ContactInfo for the creator (stored at creation time for when messaging isn't available)
+  creatorEmail     String?
+  creatorPhoneNumber String?
+  
+  participants SessionParticipant[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("study_sessions")
+  @@index([creatorId])
+  @@index([date])
+  @@index([status])
+}
+
+model SessionParticipant {
+  id          String   @id @default(uuid())
+  
+  sessionId   String
+  session     StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  role        ParticipantRole
+  joinedAt    DateTime @default(now())
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([sessionId, userId])
+  @@map("session_participants")
+  @@index([sessionId])
+  @@index([userId])
+}
