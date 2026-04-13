@@ -46,23 +46,24 @@ services:
   #     KAFKA_BROKER: kafka:9092
   #   depends_on: [kafka]
 
-  # matching-service:
-  #  build: ./services/matching-service
-  # ports:
-  #   - "4004:4004"
-  # environment:
-  #   DATABASE_URL: ${MATCHING_DB_URL}
-  #  KAFKA_BROKER: kafka:9092
-  # depends_on: [kafka]
+  matching-service:
+   build: ./services/matching-service
+   ports:
+     - "4004:4004"
+   environment:
+     DATABASE_URL: ${MATCHING_DB_URL}
+     KAFKA_BROKER: kafka:9092
+   depends_on: [kafka]
 
-  # session-service:
-  #   build: ./services/session-service
-  #   ports:
-  #     - "4005:4005"
-  #   environment:
-  #     DATABASE_URL: ${SESSION_DB_URL}
-  #     KAFKA_BROKER: kafka:9092
-  #   depends_on: [kafka]
+  session-service:
+   build: ./services/session-service
+   ports:
+     - "4005:4005"
+   environment:
+     DATABASE_URL: ${SESSION_DB_URL}
+     JWT_SECRET: ${JWT_SECRET}
+     KAFKA_BROKER: kafka:9092
+   depends_on: [kafka]
 
   notification-service:
     build: ./services/notification-service
