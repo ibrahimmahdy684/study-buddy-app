@@ -1,6 +1,4 @@
-
 services:
-
   # ── Kafka Infrastructure ──────────────────────────
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -24,19 +22,20 @@ services:
     ports:
       - "4001:4001"
     environment:
-      DATABASE_URL: ${USER_DB_URL}       # NeonDB URL from .env
+      DATABASE_URL: ${USER_DB_URL} # NeonDB URL from .env
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
     depends_on: [kafka]
 
- # profile-service:
-   # build: ./services/profile-service
-   # ports:
-  #    - "4002:4002"
-   # environment:
-    #  DATABASE_URL: ${PROFILE_DB_URL}
-    #  KAFKA_BROKER: kafka:9092
-    #depends_on: [kafka]
+  profile-service:
+    build: ./services/profile-service
+    ports:
+      - "4002:4002"
+    environment:
+      DATABASE_URL: ${PROFILE_DB_URL}
+      KAFKA_BROKER: kafka:9092
+      PORT: "4002"
+    depends_on: [kafka]
 
   # availability-service:
   #   build: ./services/availability-service
@@ -76,23 +75,23 @@ services:
 
   # ── GraphQL Gateway ───────────────────────────────
   #gateway:
-    #build: ./gateway
-    #ports:
-    #  - "4000:4000"
-    #environment:
-    #  USER_SERVICE_URL: http://user-service:4001/graphql
-      #PROFILE_SERVICE_URL: http://profile-service:4002/graphql
-      # AVAILABILITY_SERVICE_URL: http://availability-service:4003/graphql
-     # MATCHING_SERVICE_URL: http://matching-service:4004/graphql
-      # SESSION_SERVICE_URL: http://session-service:4005/graphql
-      # NOTIFICATION_SERVICE_URL: http://notification-service:4006/graphql
-    #depends_on:
-      #- user-service
-      #- profile-service
-      # - availability-service
-      #- matching-service
-      # - session-service
-      # - notification-service
+  #  build: ./gateway
+  #  ports:
+  #    - "4000:4000"
+  #  environment:
+  #    USER_SERVICE_URL: http://user-service:4001/graphql
+  #    PROFILE_SERVICE_URL: http://profile-service:4002/graphql
+  #    AVAILABILITY_SERVICE_URL: http://availability-service:4003/graphql
+  #    MATCHING_SERVICE_URL: http://matching-service:4004/graphql
+  #    SESSION_SERVICE_URL: http://session-service:4005/graphql
+  #    NOTIFICATION_SERVICE_URL: http://notification-service:4006/graphql
+  #  depends_on:
+  #    - user-service
+  #    - profile-service
+  #    - availability-service
+  #    - matching-service
+  #    - session-service
+  #    - notification-service
 
   # ── Frontend ──────────────────────────────────────
   # frontend:
