@@ -64,14 +64,15 @@ services:
   #     KAFKA_BROKER: kafka:9092
   #   depends_on: [kafka]
 
-  # notification-service:
-  #   build: ./services/notification-service
-  #   ports:
-  #     - "4006:4006"
-  #   environment:
-  #     DATABASE_URL: ${NOTIFICATION_DB_URL}
-  #     KAFKA_BROKER: kafka:9092
-  #   depends_on: [kafka]
+  notification-service:
+    build: ./services/notification-service
+    ports:
+      - "4006:4006"
+    environment:
+      DATABASE_URL: ${NOTIFICATION_DB_URL}
+      KAFKA_BROKER: kafka:9092
+      PORT: "4006"
+    depends_on: [kafka]
 
   # ── GraphQL Gateway ───────────────────────────────
   #gateway:
