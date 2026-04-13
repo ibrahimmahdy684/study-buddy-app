@@ -88,6 +88,8 @@ function createKafkaPublisher() {
                 sessionId: payload.sessionId,
                 userId: payload.userId,
                 creatorId: payload.creatorId,
+                sessionCreatorId: payload.creatorId,
+                topic: payload.topic,   
               },
             }),
           },

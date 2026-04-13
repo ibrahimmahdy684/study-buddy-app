@@ -3,7 +3,7 @@ const { randomUUID } = require("crypto");
 
 const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
 const TOPIC_AVAILABILITY_UPDATED = "AvailabilityUpdated";
-const TOPIC_MATCH_IDENTIFIED = "MatchIdentified";
+const TOPIC_MATCH_IDENTIFIED = "MatchFound";
 
 const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
   .split(",")

@@ -204,6 +204,7 @@ export const resolvers = {
         sessionId: session.id,
         userId,
         creatorId: session.creatorId,
+        topic:session.topic
       });
 
       return formatSession(updated);

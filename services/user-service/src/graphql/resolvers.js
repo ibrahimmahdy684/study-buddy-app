@@ -81,6 +81,7 @@ export const resolvers = {
         const { token, user } = await registerUser(parsed.data);
         context.res.setHeader("Set-Cookie", buildAuthCookie(token)); // ✅
         return {
+          token,
           message: "Account created successfully",
           user,
         };

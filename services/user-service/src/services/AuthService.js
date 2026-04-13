@@ -7,7 +7,7 @@ import { signAuthToken } from "../utils/auth.js";
 
 const SALT_ROUNDS = 10;
 
-const USER_EVENTS_TOPIC = process.env.KAFKA_USER_TOPIC || "user-events";
+const USER_EVENTS_TOPIC = process.env.KAFKA_USER_TOPIC || "user-created";
 
 // Strip password before returning user to client
 const sanitizeUser = (user) => {
