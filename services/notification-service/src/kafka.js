@@ -24,6 +24,7 @@ async function subscribeToEvents(consumer, onEvent) {
       "BuddyRequestCreated",
       "StudySessionCreated",
       "StudySessionJoined",
+      "MessageSent",
       "MatchFound",
     ],
     fromBeginning: false,

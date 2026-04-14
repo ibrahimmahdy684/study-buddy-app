@@ -75,6 +75,16 @@ services:
       PORT: "4006"
     depends_on: [kafka]
 
+  messaging-service:
+    build: ./services/messaging-service
+    ports:
+      - "4007:4007"
+    environment:
+      DATABASE_URL: ${MESSAGING_DB_URL}
+      KAFKA_BROKER: kafka:9092
+      PORT: "4007"
+    depends_on: [kafka]
+
   # ── GraphQL Gateway ───────────────────────────────
   #gateway:
   #  build: ./gateway
@@ -87,6 +97,7 @@ services:
   #    MATCHING_SERVICE_URL: http://matching-service:4004/graphql
   #    SESSION_SERVICE_URL: http://session-service:4005/graphql
   #    NOTIFICATION_SERVICE_URL: http://notification-service:4006/graphql
+  #    MESSAGING_SERVICE_URL: http://messaging-service:4007/graphql
   #  depends_on:
   #    - user-service
   #    - profile-service
@@ -94,6 +105,7 @@ services:
   #    - matching-service
   #    - session-service
   #    - notification-service
+  #    - messaging-service
 
   # ── Frontend ──────────────────────────────────────
   # frontend:

@@ -155,7 +155,7 @@ query {
 
 ### With Gateway
 - Gateway forwards requests to this service
-- Gateway provides auth context (X-User-ID, X-User-Email headers)
+- Gateway forwards the auth cookie; session auth comes from the JWT in `token`
 
 ## Port
 
