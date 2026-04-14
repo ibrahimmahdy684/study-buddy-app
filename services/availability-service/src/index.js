@@ -1,10 +1,10 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
-import { typeDefs }  from './graphql/schema.js';
-import { resolvers } from './graphql/resolvers.js';
+import { typeDefs }  from './schema.js';
+import { resolvers } from './resolvers.js';
 import { connectProducer, disconnectProducer } from './kafka/producer.js';
 import { startConsumer, disconnectConsumer }   from './kafka/consumer.js';
-import prisma from './db/client.js';
+import prisma from './db.js';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });

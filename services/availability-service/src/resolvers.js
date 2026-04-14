@@ -1,4 +1,4 @@
-import * as availabilityService from '../service/availability.service.js';
+import * as availabilityService from './service.js';
 
 export const resolvers = {
   Query: {

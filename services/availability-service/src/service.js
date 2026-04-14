@@ -1,5 +1,5 @@
-import prisma from '../db/client.js';
-import { publishEvent } from '../kafka/producer.js';
+import prisma from './db.js';
+import { publishEvent } from './kafka/producer.js';
 
 // ─── Time Helpers ─────────────────────────────────────────────────────────────
 

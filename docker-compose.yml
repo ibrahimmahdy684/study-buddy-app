@@ -86,26 +86,22 @@ services:
     depends_on: [kafka]
 
   # ── GraphQL Gateway ───────────────────────────────
-  #gateway:
-  #  build: ./gateway
-  #  ports:
-  #    - "4000:4000"
-  #  environment:
-  #    USER_SERVICE_URL: http://user-service:4001/graphql
-  #    PROFILE_SERVICE_URL: http://profile-service:4002/graphql
-  #    AVAILABILITY_SERVICE_URL: http://availability-service:4003/graphql
-  #    MATCHING_SERVICE_URL: http://matching-service:4004/graphql
-  #    SESSION_SERVICE_URL: http://session-service:4005/graphql
-  #    NOTIFICATION_SERVICE_URL: http://notification-service:4006/graphql
-  #    MESSAGING_SERVICE_URL: http://messaging-service:4007/graphql
-  #  depends_on:
-  #    - user-service
-  #    - profile-service
-  #    - availability-service
-  #    - matching-service
-  #    - session-service
-  #    - notification-service
-  #    - messaging-service
+  gateway:
+    build: ./gateway
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./gateway/.env
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - user-service
+      - profile-service
+      - availability-service
+      - matching-service
+      - session-service
+      - notification-service
+      - messaging-service
 
   # ── Frontend ──────────────────────────────────────
   # frontend:

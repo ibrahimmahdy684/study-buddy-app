@@ -1,5 +1,5 @@
 import { Kafka } from 'kafkajs';
-import prisma from '../db/client.js';
+import prisma from '../db.js';
 
 const kafka = new Kafka({
   clientId: 'availability-service-consumer',
