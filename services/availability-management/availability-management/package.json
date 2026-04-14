@@ -1,0 +1,23 @@
+{
+  "name": "availability-service",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.10.0",
+    "@prisma/client": "^5.11.0",
+    "dotenv": "^16.4.5",
+    "graphql": "^16.8.1",
+    "kafkajs": "^2.2.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "prisma": "^5.11.0"
+  }
+}
