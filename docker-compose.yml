@@ -37,14 +37,14 @@ services:
       PORT: "4002"
     depends_on: [kafka]
 
-  # availability-service:
-  #   build: ./services/availability-service
-  #   ports:
-  #     - "4003:4003"
-  #   environment:
-  #     DATABASE_URL: ${AVAILABILITY_DB_URL}
-  #     KAFKA_BROKER: kafka:9092
-  #   depends_on: [kafka]
+  availability-service:
+    build: ./services/availability-service
+    ports:
+      - "4003:4003"
+    environment:
+      DATABASE_URL: ${AVAILABILITY_DB_URL}
+      KAFKA_BROKER: kafka:9092
+    depends_on: [kafka]
 
   matching-service:
    build: ./services/matching-service
