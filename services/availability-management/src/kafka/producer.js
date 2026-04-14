@@ -1,6 +1,5 @@
 import { Kafka } from 'kafkajs';
 import { randomUUID } from 'crypto';
-import 'dotenv/config';
 
 const kafka = new Kafka({
   clientId: 'availability-service',

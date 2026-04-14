@@ -5,7 +5,9 @@ import { resolvers } from './graphql/resolvers.js';
 import { connectProducer, disconnectProducer } from './kafka/producer.js';
 import { startConsumer, disconnectConsumer }   from './kafka/consumer.js';
 import prisma from './db/client.js';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '../.env' });
 
 const shutdown = async () => {
   console.log('\n🛑 Shutting down availability service...');

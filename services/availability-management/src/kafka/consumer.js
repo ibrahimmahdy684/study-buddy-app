@@ -1,13 +1,12 @@
 import { Kafka } from 'kafkajs';
 import prisma from '../db/client.js';
-import 'dotenv/config';
 
 const kafka = new Kafka({
   clientId: 'availability-service-consumer',
   brokers:  [process.env.KAFKA_BROKER],
 });
 
-const consumer = kafka.consumer({ groupId: process.env.KAFKA_GROUP_ID });
+let consumer;
 
 const handlers = {
   'user.created': async ({ payload }) => {
@@ -23,6 +22,8 @@ const handlers = {
 };
 
 export const startConsumer = async () => {
+  consumer = kafka.consumer({ groupId: process.env.KAFKA_GROUP_ID });
+
   await consumer.connect();
   await consumer.subscribe({ topic: 'user.created', fromBeginning: false });
   await consumer.subscribe({ topic: 'user.deleted', fromBeginning: false });
@@ -49,5 +50,7 @@ export const startConsumer = async () => {
 };
 
 export const disconnectConsumer = async () => {
-  await consumer.disconnect();
+  if (consumer) {
+    await consumer.disconnect();
+  }
 };
