@@ -12,6 +12,19 @@ export const buildContext = (req, res) => {  // ✅ accept both
   const decoded = verifyAuthToken(token);
 
   if (!decoded) {
+    const headerUserId = req.headers["x-user-id"] || req.headers["user-id"] || null;
+
+    if (headerUserId) {
+      return {
+        req,
+        res,
+        authUser: {
+          id: String(headerUserId),
+          email: req.headers["x-user-email"] || null,
+        },
+      };
+    }
+
     return { req, res, authUser: null };  // ✅ include res
   }
 

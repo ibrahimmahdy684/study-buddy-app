@@ -80,6 +80,19 @@ const handleNotificationEvent = async (topic, event) => {
         console.log(`Match notification for user ${payload.userId}`);
         break;
 
+      case "MessageSent":
+        await prisma.notification.create({
+          data: {
+            userId: payload.receiverId,
+            type: "message_received",
+            title: "New Message",
+            message: `You received a new message from ${payload.senderId}: ${payload.messagePreview}`,
+            relatedId: payload.conversationId,
+          },
+        });
+        console.log(`Message notification for user ${payload.receiverId}`);
+        break;
+
       default:
         console.log(`Unknown event topic: ${topic}`);
     }

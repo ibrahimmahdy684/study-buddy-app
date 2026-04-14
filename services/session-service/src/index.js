@@ -63,10 +63,10 @@ const run = async () => {
           };
         }
 
-        const fallbackUserId = req?.headers?.["x-user-id"];
-        if (fallbackUserId) {
+        const headerUserId = req?.headers?.["x-user-id"] || req?.headers?.["user-id"];
+        if (headerUserId) {
           return {
-            id: fallbackUserId,
+            id: String(headerUserId),
             email: req?.headers?.["x-user-email"] || null,
           };
         }
