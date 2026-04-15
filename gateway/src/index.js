@@ -13,9 +13,14 @@ function shouldPrefixRootFields() {
 	return String(process.env.PREFIX_ROOT_FIELDS || "false").toLowerCase() === "true";
 }
 
+function shouldAllowPartialSchema() {
+	return String(process.env.ALLOW_PARTIAL_SCHEMA || "false").toLowerCase() === "true";
+}
+
 async function makeRemoteSchema(service) {
 	const executor = buildHTTPExecutor({
 		endpoint: service.url,
+		method: "POST",
 		headers(request) {
 			const user = request?.context?.user;
 			const authHeader = request?.context?.authHeader;
@@ -23,6 +28,8 @@ async function makeRemoteSchema(service) {
 
 			const headers = {
 				"content-type": "application/json",
+				"apollo-require-preflight": "true",
+				"x-apollo-operation-name": "gateway",
 			};
 
 			if (authHeader) {
@@ -58,6 +65,8 @@ async function makeRemoteSchema(service) {
 }
 
 async function buildGatewaySchema() {
+	const failedServices = [];
+
 	const remoteSchemas = await Promise.all(
 		services.map(async (service) => {
 			try {
@@ -66,6 +75,7 @@ async function buildGatewaySchema() {
 				return schema;
 			} catch (error) {
 				console.error(`Failed to load schema from ${service.name} (${service.url}):`, error.message);
+				failedServices.push(service.name);
 				return null;
 			}
 		})
@@ -74,6 +84,12 @@ async function buildGatewaySchema() {
 	const validSchemas = remoteSchemas.filter(Boolean);
 	if (!validSchemas.length) {
 		throw new Error("No downstream schemas were available");
+	}
+
+	if (failedServices.length && !shouldAllowPartialSchema()) {
+		throw new Error(
+			`Downstream schemas unavailable: ${failedServices.join(", ")}. Set ALLOW_PARTIAL_SCHEMA=true to continue with a partial gateway schema.`
+		);
 	}
 
 	return stitchSchemas({
@@ -118,7 +134,7 @@ async function run() {
 	);
 }
 
-async function runWithRetry(retries = 8, delayMs = 3000) {
+async function runWithRetry(retries = 20, delayMs = 5000) {
 	for (let attempt = 1; attempt <= retries; attempt += 1) {
 		try {
 			await run();

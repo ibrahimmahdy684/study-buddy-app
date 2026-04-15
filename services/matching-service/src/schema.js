@@ -5,7 +5,7 @@ const typeDefs = `#graphql
     BOTH
   }
 
-  type AvailabilitySlot {
+  type MatchAvailabilitySlot {
     id: ID!
     dayOfWeek: Int!
     startMinutes: Int!
@@ -21,7 +21,7 @@ const typeDefs = `#graphql
     studyStyle: String
     courses: [String!]!
     topics: [String!]!
-    availabilities: [AvailabilitySlot!]!
+    availabilities: [MatchAvailabilitySlot!]!
     createdAt: String!
     updatedAt: String!
   }
