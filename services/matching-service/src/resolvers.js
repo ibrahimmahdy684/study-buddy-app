@@ -81,7 +81,24 @@ async function getProfile(userId) {
     include: { availabilities: true },
   });
 
-  return formatProfileRecord(profile);
+  if (profile) {
+    return formatProfileRecord(profile);
+  }
+
+  try {
+    const hydrated = await hydrateProfileFromUpstream(userId);
+    if (!hydrated) return null;
+
+    const reloaded = await prisma.matchProfile.findUnique({
+      where: { userId },
+      include: { availabilities: true },
+    });
+
+    return formatProfileRecord(reloaded);
+  } catch (error) {
+    console.warn(`[matching-service] unable to hydrate profile for ${userId}: ${error.message}`);
+    return null;
+  }
 }
 
 async function saveAvailability(userId, rawSlots) {

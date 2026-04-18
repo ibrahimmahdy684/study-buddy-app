@@ -123,7 +123,9 @@ async function startConsumer({ matchThreshold = 50, limit = 1000 } = {}) {
 
   await consumer.connect();
   await consumer.subscribe({ topic: TOPIC_USER_PREFERENCES_UPDATED, fromBeginning: false });
+  console.log(`[matching-service][kafka][subscribed] topic=${TOPIC_USER_PREFERENCES_UPDATED}`);
   await consumer.subscribe({ topic: TOPIC_AVAILABILITY_UPDATED, fromBeginning: false });
+  console.log(`[matching-service][kafka][subscribed] topic=${TOPIC_AVAILABILITY_UPDATED}`);
 
   await consumer.run({
     eachMessage: async ({ topic, message }) => {

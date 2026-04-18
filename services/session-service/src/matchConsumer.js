@@ -28,6 +28,7 @@ export async function startMatchConsumer(consumer) {
 
   await consumer.connect();
   await consumer.subscribe({ topic: TOPIC_MATCH_CANDIDATES_UPDATED, fromBeginning: false });
+  console.log(`[session-service][kafka][subscribed] topic=${TOPIC_MATCH_CANDIDATES_UPDATED}`);
 
   await consumer.run({
     eachMessage: async ({ topic, message }) => {

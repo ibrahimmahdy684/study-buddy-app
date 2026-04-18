@@ -28,7 +28,9 @@ export const startConsumer = async () => {
 
     await consumer.connect();
     await consumer.subscribe({ topic: 'user.created', fromBeginning: false });
+    console.log('[availability-service][kafka][subscribed] topic=user.created');
     await consumer.subscribe({ topic: 'user.deleted', fromBeginning: false });
+    console.log('[availability-service][kafka][subscribed] topic=user.deleted');
 
     await consumer.run({
       eachMessage: async ({ topic, message }) => {

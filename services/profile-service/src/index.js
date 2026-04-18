@@ -31,6 +31,7 @@ const run = async () => {
   if (consumer) {
     await consumer.connect();
     await consumer.subscribe({ topic: "user-created", fromBeginning: true });
+    console.log("[profile-service][kafka][subscribed] topic=user-created");
 
     await consumer.run({
       eachMessage: async ({ topic, message }) => {
@@ -39,7 +40,7 @@ const run = async () => {
           if (!raw) return;
 
           const parsed = JSON.parse(raw);
-          const userId = parsed?.payload?.userId || parsed?.userId;
+          const userId = parsed?.payload?.userId || parsed?.payload?.id || parsed?.userId || parsed?.id;
           const correlationId = parsed?.correlationId || "n/a";
 
           console.log(

@@ -18,17 +18,19 @@ function createNotificationConsumer() {
 
 // Subscribe to multiple topics
 async function subscribeToEvents(consumer, onEvent) {
-  await consumer.subscribe({
-    topics: [
-      "UserPreferencesUpdated",
-      "BuddyRequestCreated",
-      "StudySessionCreated",
-      "StudySessionJoined",
-      "MessageSent",
-      "MatchFound",
-    ],
-    fromBeginning: false,
-  });
+  const topics = [
+    "UserPreferencesUpdated",
+    "BuddyRequestCreated",
+    "StudySessionCreated",
+    "StudySessionJoined",
+    "MessageSent",
+    "MatchFound",
+  ];
+
+  for (const topic of topics) {
+    await consumer.subscribe({ topic, fromBeginning: false });
+    console.log(`[notification-service][kafka][subscribed] topic=${topic}`);
+  }
 
   await consumer.run({
     eachMessage: async ({ topic, message }) => {
