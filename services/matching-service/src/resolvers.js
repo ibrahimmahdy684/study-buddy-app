@@ -1,65 +1,87 @@
 const prisma = require("./db");
 const { rankCandidates } = require("./scoring");
 
+// ─── Normalizers ─────────────────────────────────────────────────────────────
+
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return [];
   return [...new Set(values.map((v) => String(v).trim()).filter(Boolean))];
 }
 
+function formatDateValue(value) {
+  return new Date(value).toISOString().substring(0, 10);
+}
+
+function formatProfileRecord(profile) {
+  if (!profile) return null;
+
+  return {
+    ...profile,
+    createdAt: profile.createdAt ? new Date(profile.createdAt).toISOString() : null,
+    updatedAt: profile.updatedAt ? new Date(profile.updatedAt).toISOString() : null,
+    availabilities: Array.isArray(profile.availabilities)
+      ? profile.availabilities.map((slot) => ({
+          ...slot,
+          date: formatDateValue(slot.date),
+        }))
+      : [],
+  };
+}
+
 function normalizeSlot(slot) {
-  const dayOfWeek = Number(slot.dayOfWeek);
-  const startMinutes = Number(slot.startMinutes);
-  const endMinutes = Number(slot.endMinutes);
+  const date = String(slot.date || "").trim();
+  const startTime = String(slot.startTime || slot.start || "").trim();
+  const endTime = String(slot.endTime || slot.end || "").trim();
 
-  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
-    throw new Error("dayOfWeek must be an integer between 0 and 6");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error("date must be in YYYY-MM-DD format");
   }
 
-  if (
-    !Number.isInteger(startMinutes) ||
-    !Number.isInteger(endMinutes) ||
-    startMinutes < 0 ||
-    endMinutes > 1440 ||
-    startMinutes >= endMinutes
-  ) {
-    throw new Error("startMinutes/endMinutes must be valid and non-overlapping");
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(startTime)) {
+    throw new Error("startTime must be in HH:MM format");
   }
 
-  return { dayOfWeek, startMinutes, endMinutes };
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(endTime)) {
+    throw new Error("endTime must be in HH:MM format");
+  }
+
+  if (startTime >= endTime) {
+    throw new Error("startTime/endTime must be valid and non-overlapping");
+  }
+
+  return { date, startTime, endTime };
 }
 
 function assertNoOverlaps(slots) {
   const grouped = new Map();
 
   for (const slot of slots) {
-    const key = slot.dayOfWeek;
+    const key = slot.date;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(slot);
   }
 
   for (const sameDaySlots of grouped.values()) {
-    sameDaySlots.sort((a, b) => a.startMinutes - b.startMinutes);
+    sameDaySlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
     for (let i = 1; i < sameDaySlots.length; i += 1) {
       const previous = sameDaySlots[i - 1];
       const current = sameDaySlots[i];
-      if (current.startMinutes < previous.endMinutes) {
+      if (current.startTime < previous.endTime) {
         throw new Error("Availability slots cannot overlap");
       }
     }
   }
 }
 
+// ─── Data access ──────────────────────────────────────────────────────────────
+
 async function getProfile(userId) {
-  return prisma.matchProfile.findUnique({
+  const profile = await prisma.matchProfile.findUnique({
     where: { userId },
     include: { availabilities: true },
   });
-}
 
-async function getAllProfiles() {
-  return prisma.matchProfile.findMany({
-    include: { availabilities: true },
-  });
+  return formatProfileRecord(profile);
 }
 
 async function saveAvailability(userId, rawSlots) {
@@ -75,22 +97,19 @@ async function saveAvailability(userId, rawSlots) {
   await prisma.$transaction([
     prisma.availabilitySlot.deleteMany({ where: { profileId: profile.id } }),
     prisma.availabilitySlot.createMany({
-      data: slots.map((s) => ({ profileId: profile.id, ...s })),
+      data: slots.map((s) => ({
+        profileId: profile.id,
+        date: new Date(`${s.date}T00:00:00.000Z`),
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })),
     }),
   ]);
 
   return getProfile(userId);
 }
 
-async function computeRecommendedBuddies(userId, limit, minScore) {
-  const source = await getProfile(userId);
-  if (!source) {
-    throw new Error("Match profile not found for this user");
-  }
-
-  const allProfiles = await getAllProfiles();
-  return rankCandidates(source, allProfiles, limit, minScore);
-}
+// ─── Resolvers ────────────────────────────────────────────────────────────────
 
 const resolvers = {
   Query: {
@@ -101,7 +120,14 @@ const resolvers = {
     },
 
     recommendedBuddies: async (_, { userId, limit, minScore }) => {
-      return computeRecommendedBuddies(userId, limit, minScore);
+      const source = await getProfile(userId);
+      if (!source) throw new Error("Match profile not found for this user");
+
+      const allProfiles = await prisma.matchProfile.findMany({
+        include: { availabilities: true },
+      });
+
+      return rankCandidates(source, allProfiles, limit, minScore);
     },
   },
 
@@ -144,7 +170,14 @@ const resolvers = {
     },
 
     recalculateMatches: async (_, { userId, limit, minScore }, { publishMatches }) => {
-      const candidates = await computeRecommendedBuddies(userId, limit, minScore);
+      const source = await getProfile(userId);
+      if (!source) throw new Error("Match profile not found for this user");
+
+      const allProfiles = await prisma.matchProfile.findMany({
+        include: { availabilities: true },
+      });
+
+      const candidates = rankCandidates(source, allProfiles, limit, minScore);
       await publishMatches(userId, candidates);
       return candidates;
     },

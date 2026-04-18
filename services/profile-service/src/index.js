@@ -35,7 +35,18 @@ const run = async () => {
     await consumer.run({
       eachMessage: async ({ topic, message }) => {
         if (topic === "user-created") {
-          const { userId } = JSON.parse(message.value.toString());
+          const raw = message.value?.toString();
+          if (!raw) return;
+
+          const parsed = JSON.parse(raw);
+          const userId = parsed?.payload?.userId || parsed?.userId;
+          const correlationId = parsed?.correlationId || "n/a";
+
+          console.log(
+            `[profile-service][kafka][consumed] topic=${topic} userId=${userId || "unknown"} correlationId=${correlationId}`
+          );
+
+          if (!userId) return;
           await prisma.profile.upsert({
             where: { userId },
             create: { userId },

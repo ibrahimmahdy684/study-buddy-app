@@ -7,9 +7,9 @@ const typeDefs = `#graphql
 
   type MatchAvailabilitySlot {
     id: ID!
-    dayOfWeek: Int!
-    startMinutes: Int!
-    endMinutes: Int!
+    date: String!
+    startTime: String!
+    endTime: String!
   }
 
   type MatchProfile {
@@ -45,21 +45,21 @@ const typeDefs = `#graphql
   }
 
   input AvailabilitySlotInput {
-    dayOfWeek: Int!
-    startMinutes: Int!
-    endMinutes: Int!
+    date: String!
+    startTime: String!
+    endTime: String!
   }
 
   type Query {
     health: String!
     matchProfile(userId: String!): MatchProfile
-    recommendedBuddies(userId: String!, limit: Int = 10, minScore: Int = 0): [MatchCandidate!]!
+    recommendedBuddies(userId: String!, limit: Int = 10, minScore: Int = 50): [MatchCandidate!]!
   }
 
   type Mutation {
     upsertMatchProfile(userId: String!, input: MatchProfileInput!): MatchProfile!
     setAvailability(userId: String!, slots: [AvailabilitySlotInput!]!): MatchProfile!
-    recalculateMatches(userId: String!, limit: Int = 5, minScore: Int = 55): [MatchCandidate!]!
+    recalculateMatches(userId: String!, limit: Int = 1000, minScore: Int = 50): [MatchCandidate!]!
   }
 `;
 

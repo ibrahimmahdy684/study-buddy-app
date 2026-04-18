@@ -7,6 +7,7 @@ import typeDefs from "./schema.js";
 import { resolvers } from "./resolvers.js";
 import kafkaModule from "./kafka.js";
 const {createKafkaPublisher} = kafkaModule;
+import { createMatchConsumer, startMatchConsumer } from "./matchConsumer.js";
 import prisma from "./db.js";
 
 const extractToken = (req) => {
@@ -47,8 +48,15 @@ const {
   publishStudySessionCancelled,
   disconnect: disconnectProducer,
 } = createKafkaPublisher();
+const matchConsumer = createMatchConsumer();
 
 const run = async () => {
+  if (matchConsumer) {
+    await startMatchConsumer(matchConsumer);
+  } else {
+    console.log("SKIP_KAFKA_CONSUMER=true — session match consumer disabled");
+  }
+
   const { url } = await startStandaloneServer(server, {
     listen: { port: parseInt(process.env.PORT || "4005", 10) },
     context: async ({ req }) => ({
@@ -92,6 +100,9 @@ const run = async () => {
 const shutdown = async () => {
   console.log("\n⏳ Shutting down gracefully...");
   try {
+    if (matchConsumer) {
+      await matchConsumer.disconnect().catch(() => {});
+    }
     await disconnectProducer();
     await prisma.$disconnect();
     console.log("✓ Shutdown complete");

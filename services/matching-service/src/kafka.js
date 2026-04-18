@@ -4,6 +4,7 @@ const { randomUUID } = require("crypto");
 const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
 const TOPIC_AVAILABILITY_UPDATED = "AvailabilityUpdated";
 const TOPIC_MATCH_IDENTIFIED = "MatchFound";
+const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
 
 const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
   .split(",")
@@ -19,6 +20,7 @@ function createKafkaPublisher() {
   if (process.env.SKIP_KAFKA === "true") {
     return {
       publishMatchIdentified: async () => randomUUID(),
+      publishMatchCandidatesUpdated: async () => randomUUID(),
       disconnect: async () => {},
     };
   }
@@ -56,6 +58,41 @@ function createKafkaPublisher() {
       ],
     });
 
+    console.log(
+      `[matching-service][kafka][produced] topic=${TOPIC_MATCH_IDENTIFIED} userId=${userId} candidateUserId=${candidate?.userId || "unknown"} score=${candidate?.score ?? "n/a"} correlationId=${cid}`
+    );
+
+    return cid;
+  }
+
+  async function publishMatchCandidatesUpdated(userId, candidates, minScore, correlationId) {
+    const cid = correlationId || randomUUID();
+    await ensureConnected();
+
+    await producer.send({
+      topic: TOPIC_MATCH_CANDIDATES_UPDATED,
+      messages: [
+        {
+          key: userId,
+          value: JSON.stringify({
+            event: TOPIC_MATCH_CANDIDATES_UPDATED,
+            timestamp: new Date().toISOString(),
+            producerService: "matching-service",
+            correlationId: cid,
+            payload: {
+              userId,
+              minScore,
+              candidates,
+            },
+          }),
+        },
+      ],
+    });
+
+    console.log(
+      `[matching-service][kafka][produced] topic=${TOPIC_MATCH_CANDIDATES_UPDATED} userId=${userId} candidates=${Array.isArray(candidates) ? candidates.length : 0} minScore=${minScore} correlationId=${cid}`
+    );
+
     return cid;
   }
 
@@ -68,6 +105,7 @@ function createKafkaPublisher() {
 
   return {
     publishMatchIdentified,
+    publishMatchCandidatesUpdated,
     disconnect,
   };
 }
@@ -86,6 +124,7 @@ module.exports = {
   TOPIC_USER_PREFERENCES_UPDATED,
   TOPIC_AVAILABILITY_UPDATED,
   TOPIC_MATCH_IDENTIFIED,
+  TOPIC_MATCH_CANDIDATES_UPDATED,
   createKafkaPublisher,
   createConsumer,
 };

@@ -1,5 +1,6 @@
 import { GraphQLError } from "graphql";
 import prisma from "./db.js";
+import { canJoinCreatorSession } from "./matchState.js";
 
 const authError = () =>
   new GraphQLError("Not authenticated", {
@@ -168,6 +169,13 @@ export const resolvers = {
         throw new GraphQLError("Cannot join a completed session", {
           extensions: { code: "BAD_USER_INPUT" },
         });
+      }
+
+      if (!canJoinCreatorSession(userId, session.creatorId)) {
+        throw new GraphQLError(
+          "You can only join sessions created by your matched buddies",
+          { extensions: { code: "FORBIDDEN" } }
+        );
       }
 
       // Check if user is already a participant

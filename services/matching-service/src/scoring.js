@@ -67,13 +67,27 @@ function overlapForDay(slotA, slotB) {
   return Math.max(0, end - start);
 }
 
+function timeToMinutes(value) {
+  const [hours, minutes] = String(value).split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 function availabilityOverlapMinutes(slotsA, slotsB) {
   let overlap = 0;
 
   for (const a of slotsA || []) {
     for (const b of slotsB || []) {
-      if (a.dayOfWeek !== b.dayOfWeek) continue;
-      overlap += overlapForDay(a, b);
+      if (String(a.date) !== String(b.date)) continue;
+      overlap += overlapForDay(
+        {
+          startMinutes: timeToMinutes(a.startTime),
+          endMinutes: timeToMinutes(a.endTime),
+        },
+        {
+          startMinutes: timeToMinutes(b.startTime),
+          endMinutes: timeToMinutes(b.endTime),
+        }
+      );
     }
   }
 

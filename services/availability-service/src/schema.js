@@ -1,19 +1,9 @@
 export const typeDefs = `#graphql
 
-  enum DayOfWeek {
-    SUNDAY
-    MONDAY
-    TUESDAY
-    WEDNESDAY
-    THURSDAY
-    FRIDAY
-    SATURDAY
-  }
-
   type AvailabilitySlot {
     id:          String!
     userId:      String!
-    dayOfWeek:   DayOfWeek!
+    date:        String!
     startTime:   String!
     endTime:     String!
     isRecurring: Boolean!
@@ -32,13 +22,13 @@ export const typeDefs = `#graphql
     availabilitySlot(id: String!): AvailabilitySlot
     overlappingUsers(
       userId:    String!
-      dayOfWeek: DayOfWeek!
+      date:      String!
       startTime: String!
       endTime:   String!
     ): [String]
     overlappingUsersDetailed(
       userId:    String!
-      dayOfWeek: DayOfWeek!
+      date:      String!
       startTime: String!
       endTime:   String!
     ): [OverlapResult]
@@ -47,7 +37,7 @@ export const typeDefs = `#graphql
   type Mutation {
     addAvailabilitySlot(
       userId:      String!
-      dayOfWeek:   DayOfWeek!
+      date:        String!
       startTime:   String!
       endTime:     String!
       isRecurring: Boolean
@@ -55,6 +45,7 @@ export const typeDefs = `#graphql
 
     updateAvailabilitySlot(
       id:          String!
+      date:        String
       startTime:   String
       endTime:     String
       isRecurring: Boolean

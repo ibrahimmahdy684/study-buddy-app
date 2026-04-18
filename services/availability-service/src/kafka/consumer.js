@@ -19,6 +19,7 @@ const handlers = {
     await prisma.availabilitySlot.deleteMany({ where: { userId } });
     console.log(`🗑️  [user.deleted] Cleared all slots for user ${userId}`);
   },
+  
 };
 
 export const startConsumer = async () => {

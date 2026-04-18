@@ -33,10 +33,10 @@ model AvailabilitySlot {
   id           String       @id @default(cuid())
   profileId    String
   profile      MatchProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  dayOfWeek    Int
-  startMinutes Int
-  endMinutes   Int
+  date         DateTime     @db.Date
+  startTime    String
+  endTime      String
 
   @@index([profileId])
-  @@index([dayOfWeek, startMinutes, endMinutes])
+  @@index([date])
 }

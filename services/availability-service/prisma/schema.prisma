@@ -7,28 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum DayOfWeek {
-  SUNDAY
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-}
+
 
 model AvailabilitySlot {
   id          String    @id @default(uuid())
   userId      String
-  dayOfWeek   DayOfWeek
+  date        DateTime  @db.Date
   startTime   DateTime  @db.Time
   endTime     DateTime  @db.Time
   isRecurring Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@unique([userId, dayOfWeek, startTime, endTime])
+  @@unique([userId, date, startTime, endTime])
   @@index([userId])
-  @@index([dayOfWeek])
+  @@index([date])
   @@map("availability_slots")
 }

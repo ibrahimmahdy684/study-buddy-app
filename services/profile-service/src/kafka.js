@@ -48,6 +48,9 @@ function createKafkaPublisher() {
         },
       ],
     });
+    console.log(
+      `[profile-service][kafka][produced] topic=${TOPIC_USER_PREFERENCES_UPDATED} userId=${userId} reason=${payload?.reason || "n/a"} correlationId=${cid}`
+    );
     return cid;
   }
 

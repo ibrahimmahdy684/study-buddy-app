@@ -14,19 +14,19 @@ export const resolvers = {
       return availabilityService.getById(id);
     },
 
-    overlappingUsers: (_, { userId, dayOfWeek, startTime, endTime }) => {
+    overlappingUsers: (_, { userId, date, startTime, endTime }) => {
       return availabilityService.findOverlappingUserIds({
         userId,
-        dayOfWeek,
+        date,
         startTime,
         endTime,
       });
     },
 
-    overlappingUsersDetailed: (_, { userId, dayOfWeek, startTime, endTime }) => {
+    overlappingUsersDetailed: (_, { userId, date, startTime, endTime }) => {
       return availabilityService.findOverlappingDetailed({
         userId,
-        dayOfWeek,
+        date,
         startTime,
         endTime,
       });
