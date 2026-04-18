@@ -67,6 +67,22 @@ function overlapForDay(slotA, slotB) {
   return Math.max(0, end - start);
 }
 
+function normalizeDateValue(value) {
+  if (value instanceof Date) {
+    return value.toISOString().substring(0, 10);
+  }
+
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return text;
+  }
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().substring(0, 10);
+}
+
 function timeToMinutes(value) {
   const [hours, minutes] = String(value).split(":").map(Number);
   return hours * 60 + minutes;
@@ -77,7 +93,7 @@ function availabilityOverlapMinutes(slotsA, slotsB) {
 
   for (const a of slotsA || []) {
     for (const b of slotsB || []) {
-      if (String(a.date) !== String(b.date)) continue;
+      if (normalizeDateValue(a.date) !== normalizeDateValue(b.date)) continue;
       overlap += overlapForDay(
         {
           startMinutes: timeToMinutes(a.startTime),
