@@ -1,6 +1,10 @@
 require("dotenv").config();
 
 const { ApolloServer } = require("@apollo/server");
+const { expressMiddleware } = require("@apollo/server/express4");
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
 const { startStandaloneServer } = require("@apollo/server/standalone");
 const { stitchSchemas } = require("@graphql-tools/stitch");
 const { schemaFromExecutor, wrapSchema, RenameRootFields } = require("@graphql-tools/wrap");
@@ -139,47 +143,56 @@ function startSchemaRefresh(server) {
 }
 
 async function run() {
-	console.log("[gateway] Loading schemas from downstream services...");
-	const schema = await buildGatewaySchema();
+  console.log("[gateway] Loading schemas from downstream services...");
+  const schema = await buildGatewaySchema();
 
-	const server = new ApolloServer({
-		schema,
-		csrfPrevention: false,
-		formatError: (error) => {
-			console.error("[gateway] GraphQL error:", error.message);
-			return error;
-		},
-	});
+  const server = new ApolloServer({
+    schema,
+    csrfPrevention: false,
+    formatError: (error) => {
+      console.error("[gateway] GraphQL error:", error.message);
+      return error;
+    },
+  });
 
-	const port = Number.parseInt(process.env.PORT || "4000", 10);
-	const { url } = await startStandaloneServer(server, {
-		listen: { port },
-		context: async ({ req }) => {
-			const user = extractUser(req);
-			const token = extractToken(req);
+  await server.start();
 
-			return {
-				user,
-				authHeader: token ? `Bearer ${token}` : req?.headers?.authorization || null,
-				cookieHeader: req?.headers?.cookie || null,
-				req,
-			};
-		},
-	});
+  const app = express();
+  const httpServer = http.createServer(app);
 
-	console.log(`[gateway] Ready at ${url}`);
-	console.log(
-		shouldPrefixRootFields()
-			? "[gateway] Root fields are prefixed by service name (PREFIX_ROOT_FIELDS=true)."
-			: "[gateway] Root fields are not prefixed (PREFIX_ROOT_FIELDS=false)."
-	);
+  app.use(
+    "/graphql",
+    cors({
+      origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+      credentials: true,
+    }),
+    express.json(),
+    expressMiddleware(server, {
+      context: async ({ req, res }) => {
+        const user = extractUser(req);
+        const token = extractToken(req);
 
-	// Start background schema refresh for failed services
-	if (failedServicesTracker.size > 0) {
-		startSchemaRefresh(server);
-	}
+        return {
+          user,
+          authHeader: token ? `Bearer ${token}` : req?.headers?.authorization || null,
+          cookieHeader: req?.headers?.cookie || null,
+          req,
+          res,
+        };
+      },
+    })
+  );
 
-	return server;
+  const port = Number.parseInt(process.env.PORT || "4000", 10);
+  await new Promise((resolve) => httpServer.listen({ port }, resolve));
+
+  console.log(`[gateway] Ready at http://localhost:${port}/graphql`);
+
+  if (failedServicesTracker.size > 0) {
+    startSchemaRefresh(server);
+  }
+
+  return server;
 }
 
 async function runWithRetry(retries = 3, delayMs = 5000) {
