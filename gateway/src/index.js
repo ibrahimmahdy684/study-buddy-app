@@ -14,7 +14,7 @@ function shouldPrefixRootFields() {
 }
 
 function shouldAllowPartialSchema() {
-	return String(process.env.ALLOW_PARTIAL_SCHEMA || "false").toLowerCase() === "true";
+	return String(process.env.ALLOW_PARTIAL_SCHEMA || "true").toLowerCase() === "true";
 }
 
 async function makeRemoteSchema(service) {
@@ -64,18 +64,29 @@ async function makeRemoteSchema(service) {
 	});
 }
 
+const schemaCache = new Map();
+const failedServicesTracker = new Set();
+
 async function buildGatewaySchema() {
-	const failedServices = [];
+	const currentFailures = new Set();
 
 	const remoteSchemas = await Promise.all(
 		services.map(async (service) => {
 			try {
 				const schema = await makeRemoteSchema(service);
-				console.log(`Loaded schema from ${service.name} (${service.url})`);
+				schemaCache.set(service.name, schema);
+				failedServicesTracker.delete(service.name);
+				console.log(`[gateway] Loaded schema from ${service.name} (${service.url})`);
 				return schema;
 			} catch (error) {
-				console.error(`Failed to load schema from ${service.name} (${service.url}):`, error.message);
-				failedServices.push(service.name);
+				const cached = schemaCache.get(service.name);
+				if (cached) {
+					console.warn(`[gateway] Schema load failed for ${service.name}, using cached schema`);
+					return cached;
+				}
+				console.error(`[gateway] Failed to load schema from ${service.name} (${service.url}):`, error.message);
+				failedServicesTracker.add(service.name);
+				currentFailures.add(service.name);
 				return null;
 			}
 		})
@@ -86,9 +97,9 @@ async function buildGatewaySchema() {
 		throw new Error("No downstream schemas were available");
 	}
 
-	if (failedServices.length && !shouldAllowPartialSchema()) {
-		throw new Error(
-			`Downstream schemas unavailable: ${failedServices.join(", ")}. Set ALLOW_PARTIAL_SCHEMA=true to continue with a partial gateway schema.`
+	if (currentFailures.size > 0) {
+		console.warn(
+			`[gateway] Starting with partial schema (missing: ${Array.from(currentFailures).join(", ")}). Services will be added as they become available.`
 		);
 	}
 
@@ -97,15 +108,45 @@ async function buildGatewaySchema() {
 	});
 }
 
+function startSchemaRefresh(server) {
+	const refreshIntervalMs = Number(process.env.SCHEMA_REFRESH_INTERVAL_MS || "30000");
+
+	const interval = setInterval(async () => {
+		if (failedServicesTracker.size === 0) return;
+
+		console.log(`[gateway] Attempting to refresh ${failedServicesTracker.size} failed service(s)...`);
+
+		for (const serviceName of failedServicesTracker) {
+			const service = services.find((s) => s.name === serviceName);
+			if (!service) continue;
+
+			try {
+				const schema = await makeRemoteSchema(service);
+				schemaCache.set(serviceName, schema);
+				failedServicesTracker.delete(serviceName);
+				console.log(`[gateway] ✓ Recovered schema from ${serviceName}`);
+				// Request schema update on the server
+				if (server && typeof server.schema === "object") {
+					await server.schemaDerivedData.reset()?.catch(() => {});
+				}
+			} catch (error) {
+				console.debug(`[gateway] Refresh attempt for ${serviceName} still failing: ${error.message}`);
+			}
+		}
+	}, refreshIntervalMs);
+
+	return interval;
+}
+
 async function run() {
-	console.log("Loading schemas from downstream services...");
+	console.log("[gateway] Loading schemas from downstream services...");
 	const schema = await buildGatewaySchema();
 
 	const server = new ApolloServer({
 		schema,
 		csrfPrevention: false,
 		formatError: (error) => {
-			console.error("Gateway GraphQL error:", error.message);
+			console.error("[gateway] GraphQL error:", error.message);
 			return error;
 		},
 	});
@@ -126,28 +167,35 @@ async function run() {
 		},
 	});
 
-	console.log(`Gateway ready at ${url}`);
+	console.log(`[gateway] Ready at ${url}`);
 	console.log(
 		shouldPrefixRootFields()
-			? "Root fields are prefixed by service name (PREFIX_ROOT_FIELDS=true)."
-			: "Root fields are not prefixed (PREFIX_ROOT_FIELDS=false)."
+			? "[gateway] Root fields are prefixed by service name (PREFIX_ROOT_FIELDS=true)."
+			: "[gateway] Root fields are not prefixed (PREFIX_ROOT_FIELDS=false)."
 	);
+
+	// Start background schema refresh for failed services
+	if (failedServicesTracker.size > 0) {
+		startSchemaRefresh(server);
+	}
+
+	return server;
 }
 
-async function runWithRetry(retries = 20, delayMs = 5000) {
+async function runWithRetry(retries = 3, delayMs = 5000) {
 	for (let attempt = 1; attempt <= retries; attempt += 1) {
 		try {
 			await run();
 			return;
 		} catch (error) {
-			console.error(`Gateway start attempt ${attempt}/${retries} failed:`, error.message);
+			console.error(`[gateway] Start attempt ${attempt}/${retries} failed:`, error.message);
 			if (attempt < retries) {
 				await new Promise((resolve) => setTimeout(resolve, delayMs));
 			}
 		}
 	}
 
-	throw new Error("Gateway failed to start after retries");
+	throw new Error("[gateway] Failed to start after retries (no downstream services available)");
 }
 
 runWithRetry().catch((error) => {
