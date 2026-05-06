@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useMutation, gql } from '@apollo/client'
+import { useMutation, useApolloClient, gql } from '@apollo/client'
 import { BookOpen, AlertCircle } from 'lucide-react'
 import { ImageWithFallback } from '../components/figma/ImageWithFallback'
 import heroImage from '../assets/landing/hero-study.jpg'
 import { isValidEmail, isValidPassword, getErrorMessage } from '../utils/helpers'
+import { GET_ME } from '../hooks/useSession'
 
 const LOGIN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       message
+      token
       user {
         id
         name
@@ -28,9 +30,53 @@ export default function SignIn() {
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState(null)
 
+  const client = useApolloClient()
   const [login, { loading }] = useMutation(LOGIN_MUTATION, {
-    onCompleted: () => {
-      navigate('/dashboard')
+    refetchQueries: [{ query: GET_ME }],
+    awaitRefetchQueries: true,
+    onCompleted: async (data) => {
+      const userId = data.login.user.id
+      
+      try {
+        const { data: prefData } = await client.query({
+          query: gql`
+            query GetProfile($userId: String!) {
+              profile(userId: $userId) {
+                id
+              }
+            }
+          `,
+          variables: { userId },
+          fetchPolicy: 'network-only'
+        })
+
+        if (!prefData?.profile) {
+          navigate('/study-preferences')
+          return
+        }
+
+        const { data: availData } = await client.query({
+          query: gql`
+            query GetMyAvailability($userId: String!) {
+              myAvailability(userId: $userId) {
+                id
+              }
+            }
+          `,
+          variables: { userId },
+          fetchPolicy: 'network-only'
+        })
+
+        if (!availData?.myAvailability || availData.myAvailability.length === 0) {
+          navigate('/availability')
+          return
+        }
+
+        navigate('/dashboard')
+      } catch (err) {
+        console.error("Routing check error", err)
+        navigate('/study-preferences')
+      }
     },
     onError: (error) => {
       setServerError(getErrorMessage(error))
