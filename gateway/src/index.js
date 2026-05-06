@@ -146,9 +146,37 @@ async function run() {
   console.log("[gateway] Loading schemas from downstream services...");
   const schema = await buildGatewaySchema();
 
+  const setCookiePlugin = {
+    async requestDidStart() {
+      return {
+        async willSendResponse(requestContext) {
+          const { response, contextValue } = requestContext;
+          if (response.body.kind === 'single' && response.body.singleResult.data) {
+            const data = response.body.singleResult.data;
+            let token = null;
+            if (data.login?.token) token = data.login.token;
+            if (data.register?.token) token = data.register.token;
+            
+            if (token) {
+              const isProd = process.env.NODE_ENV === "production";
+              const cookie = `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=${isProd ? "Strict" : "Lax"}${isProd ? "; Secure" : ""}`;
+              contextValue.res.setHeader('Set-Cookie', cookie);
+            }
+            
+            if (data.logout) {
+              const cookie = `token=; HttpOnly; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+              contextValue.res.setHeader('Set-Cookie', cookie);
+            }
+          }
+        }
+      };
+    }
+  };
+
   const server = new ApolloServer({
     schema,
     csrfPrevention: false,
+    plugins: [setCookiePlugin],
     formatError: (error) => {
       console.error("[gateway] GraphQL error:", error.message);
       return error;
