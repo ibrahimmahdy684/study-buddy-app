@@ -102,6 +102,9 @@ async function buildGatewaySchema() {
 	}
 
 	if (currentFailures.size > 0) {
+		if (!shouldAllowPartialSchema()) {
+			throw new Error(`Missing schemas: ${Array.from(currentFailures).join(", ")}`);
+		}
 		console.warn(
 			`[gateway] Starting with partial schema (missing: ${Array.from(currentFailures).join(", ")}). Services will be added as they become available.`
 		);
@@ -223,7 +226,7 @@ async function run() {
   return server;
 }
 
-async function runWithRetry(retries = 3, delayMs = 5000) {
+async function runWithRetry(retries = 10, delayMs = 5000) {
 	for (let attempt = 1; attempt <= retries; attempt += 1) {
 		try {
 			await run();

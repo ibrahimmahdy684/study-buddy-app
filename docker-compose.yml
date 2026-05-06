@@ -94,6 +94,7 @@ services:
       - ./gateway/.env
     environment:
       JWT_SECRET: ${JWT_SECRET}
+      ALLOW_PARTIAL_SCHEMA: "false"
     depends_on:
       - user-service
       - profile-service
