@@ -1,5 +1,7 @@
 import { GraphQLError } from "graphql";
+import { withFilter } from "graphql-subscriptions";
 import prisma from "./db.js";
+import { pubsub, TOPIC_MESSAGE_SENT } from "./pubsub.js";
 
 const requireUserId = (context) => {
 	const userId = context?.authUser?.id || context?.userId || null;
@@ -153,7 +155,39 @@ const resolvers = {
 				messagePreview: message.content.slice(0, 100),
 			});
 
+			// Fan-out to live GraphQL subscribers on this instance.
+			await pubsub.publish(TOPIC_MESSAGE_SENT, {
+				messageSent: message,
+				_conversationId: conversation.id,
+				_senderId: senderId,
+				_receiverId: cleanReceiverId,
+			});
+
 			return message;
+		},
+	},
+
+	Subscription: {
+		messageSent: {
+			subscribe: withFilter(
+				() => pubsub.asyncIterator([TOPIC_MESSAGE_SENT]),
+				(payload, args, context) => {
+					if (!payload) return false;
+					const me = context?.authUser?.id || context?.userId || null;
+					const { _conversationId, _senderId, _receiverId } = payload;
+
+					// Filter by explicit conversation if requested.
+					if (args.conversationId) {
+						return String(_conversationId) === String(args.conversationId);
+					}
+
+					// Otherwise only push events relevant to the authenticated user
+					// (or recipientId, which must match the authenticated user).
+					const target = args.recipientId ? String(args.recipientId) : me;
+					if (!target) return false;
+					return target === String(_senderId) || target === String(_receiverId);
+				},
+			),
 		},
 	},
 
