@@ -44,6 +44,7 @@ services:
     environment:
       DATABASE_URL: ${AVAILABILITY_DB_URL}
       KAFKA_BROKER: kafka:9092
+      PORT: "4003"
     depends_on: [kafka]
 
   matching-service:
