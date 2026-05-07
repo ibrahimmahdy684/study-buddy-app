@@ -17,10 +17,9 @@ import {
   DELETE_NOTIFICATION,
 } from '../lib/graphql/mutations'
 import { NOTIFICATION_LABELS } from '../lib/constants'
-import { Notification } from '../lib/types'
 import { Card, Spinner } from '../components'
 
-const getIcon = (type: string) => {
+const getIcon = (type) => {
   switch (type) {
     case 'match_found':
       return <Star className="w-5 h-5 text-[#4CAF50]" />
@@ -44,7 +43,7 @@ const NotificationsPage = () => {
     data,
     loading,
     error: queryError,
-  } = useQuery<{ notifications: Notification[] }>(GET_NOTIFICATIONS, {
+  } = useQuery(GET_NOTIFICATIONS, {
     variables: { userId: user?.id },
     skip: !user?.id,
     errorPolicy: 'all',
@@ -59,11 +58,11 @@ const NotificationsPage = () => {
   const [markAllAsRead] = useMutation(MARK_ALL_AS_READ, refetchOpts)
   const [deleteNotification] = useMutation(DELETE_NOTIFICATION, refetchOpts)
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  const handleMarkAsRead = async (notificationId) => {
     try {
       setActionError('')
       await markAsRead({ variables: { notificationId } })
-    } catch (err: any) {
+    } catch (err) {
       setActionError(err.message || 'Failed to mark notification as read')
     }
   }
@@ -73,16 +72,16 @@ const NotificationsPage = () => {
     try {
       setActionError('')
       await markAllAsRead({ variables: { userId: user.id } })
-    } catch (err: any) {
+    } catch (err) {
       setActionError(err.message || 'Failed to mark all as read')
     }
   }
 
-  const handleDelete = async (notificationId: string) => {
+  const handleDelete = async (notificationId) => {
     try {
       setActionError('')
       await deleteNotification({ variables: { notificationId } })
-    } catch (err: any) {
+    } catch (err) {
       setActionError(err.message || 'Failed to delete notification')
     }
   }
