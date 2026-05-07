@@ -27,6 +27,14 @@ const typeDefs = `#graphql
         sendMessage(receiverId: ID!, content: String!): Message!
         getOrCreateConversation(otherUserId: ID!): Conversation!
     }
+
+    type Subscription {
+        # Live stream of new messages.
+        # - If conversationId is provided, only events for that conversation are pushed.
+        # - If recipientId is provided, only events where the authenticated user is sender or recipient are pushed.
+        # - When neither is provided, falls back to events for the authenticated user.
+        messageSent(conversationId: ID, recipientId: ID): Message!
+    }
 `;
 
 export default typeDefs;
