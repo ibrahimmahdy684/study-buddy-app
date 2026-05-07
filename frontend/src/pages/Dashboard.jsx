@@ -206,7 +206,7 @@ export function Dashboard() {
                 Recommended Study Buddies
               </h2>
               <button
-                onClick={() => navigate('/dashboard/matching')}
+                onClick={() => navigate('/matching')}
                 className="text-[#C76B4F] hover:underline text-sm"
               >
                 View All
@@ -224,7 +224,7 @@ export function Dashboard() {
                   <div
                     key={buddy.userId}
                     onClick={() =>
-                      navigate(`/dashboard/match/${buddy.userId}`)
+                      navigate(`/matching`)
                     }
                     className="flex items-center gap-4 p-4 bg-[#F4E3C8] rounded-lg hover:bg-[#EDD9B8] transition-colors cursor-pointer"
                   >
@@ -262,7 +262,7 @@ export function Dashboard() {
                 Upcoming Sessions
               </h2>
               <button
-                onClick={() => navigate('/dashboard/sessions')}
+                onClick={() => navigate('/sessions')}
                 className="text-[#C76B4F] hover:underline text-sm"
               >
                 View All
@@ -274,7 +274,7 @@ export function Dashboard() {
                 <Calendar className="w-12 h-12 text-[#5A5A5A] mx-auto mb-2 opacity-50" />
                 <p className="text-[#5A5A5A]">No upcoming sessions</p>
                 <button
-                  onClick={() => navigate('/dashboard/create-session')}
+                  onClick={() => navigate('/sessions')}
                   className="mt-4 px-4 py-2 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors text-sm"
                 >
                   Create a Session
@@ -377,7 +377,7 @@ export function Dashboard() {
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
-            onClick={() => navigate('/dashboard/matching')}
+            onClick={() => navigate('/matching')}
             className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:border-[#E76F51] hover:shadow-md transition-all text-left"
           >
             <Users className="w-8 h-8 text-[#E76F51] mb-3" />
@@ -390,7 +390,7 @@ export function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/dashboard/create-session')}
+            onClick={() => navigate('/sessions')}
             className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:border-[#4F7CAC] hover:shadow-md transition-all text-left"
           >
             <Calendar className="w-8 h-8 text-[#4F7CAC] mb-3" />
