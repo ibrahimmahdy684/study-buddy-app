@@ -3,7 +3,6 @@ import LandingPage from './pages/LandingPage'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import StudyPreferences from './pages/StudyPreferences'
-import Availability from './pages/Availability'
 import { Dashboard } from './pages/Dashboard'
 
 function App() {
@@ -19,7 +18,6 @@ function App() {
         <Route path="/login" element={<SignIn />} />
         <Route path="/register" element={<SignUp />} />
         <Route path="/study-preferences" element={<StudyPreferences />} />
-        <Route path="/availability" element={<Availability />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

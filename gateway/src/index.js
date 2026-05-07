@@ -157,18 +157,36 @@ async function run() {
           if (response.body.kind === 'single' && response.body.singleResult.data) {
             const data = response.body.singleResult.data;
             let token = null;
-            if (data.login?.token) token = data.login.token;
-            if (data.register?.token) token = data.register.token;
             
-            if (token) {
-              const isProd = process.env.NODE_ENV === "production";
-              const cookie = `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=${isProd ? "Strict" : "Lax"}${isProd ? "; Secure" : ""}`;
-              contextValue.res.setHeader('Set-Cookie', cookie);
+            // Robust token extraction from register/login mutations
+            if (data.register && data.register.token) {
+              token = data.register.token;
+            } else if (data.login && data.login.token) {
+              token = data.login.token;
             }
             
-            if (data.logout) {
+            // Fallback: search all response keys for a token field
+            if (!token) {
+              for (const [key, value] of Object.entries(data)) {
+                if (value && typeof value === 'object' && value.token) {
+                  token = value.token;
+                  break;
+                }
+              }
+            }
+            
+            if (token && String(token).trim()) {
+              const isProd = process.env.NODE_ENV === "production";
+              const tokenValue = String(token).trim();
+              const cookie = `token=${tokenValue}; HttpOnly; Path=/; Max-Age=604800; SameSite=${isProd ? "Strict" : "Lax"}${isProd ? "; Secure" : ""}`;
+              contextValue.res.setHeader('Set-Cookie', cookie);
+              console.log('[gateway] ✓ Set auth cookie from token');
+            }
+            
+            if (data.logout && data.logout.success) {
               const cookie = `token=; HttpOnly; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
               contextValue.res.setHeader('Set-Cookie', cookie);
+              console.log('[gateway] ✓ Cleared auth cookie on logout');
             }
           }
         }

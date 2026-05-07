@@ -32,8 +32,6 @@ export default function SignIn() {
 
   const client = useApolloClient()
   const [login, { loading }] = useMutation(LOGIN_MUTATION, {
-    refetchQueries: [{ query: GET_ME }],
-    awaitRefetchQueries: true,
     onCompleted: async (data) => {
       const userId = data.login.user.id
       
@@ -68,7 +66,7 @@ export default function SignIn() {
         })
 
         if (!availData?.myAvailability || availData.myAvailability.length === 0) {
-          navigate('/availability')
+          navigate('/study-preferences')
           return
         }
 
