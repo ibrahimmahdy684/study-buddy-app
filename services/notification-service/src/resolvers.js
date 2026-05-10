@@ -1,5 +1,6 @@
 import prisma from "./db.js";
-import { GraphQLError } from "graphql";
+import { GraphQLError, GraphQLScalarType } from "graphql";
+import { Kind } from "graphql/language/index.js";
 
 const throwError = (message, statusCode = 500) => {
   const error = new GraphQLError(message, {
@@ -10,7 +11,42 @@ const throwError = (message, statusCode = 500) => {
   throw error;
 };
 
+const DateTimeScalar = new GraphQLScalarType({
+  name: "DateTime",
+  description: "ISO 8601 DateTime scalar type",
+  serialize(value) {
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (typeof value === "string") {
+      return new Date(value).toISOString();
+    }
+    throw new Error(`Invalid DateTime value: ${value}`);
+  },
+  parseValue(value) {
+    if (typeof value === "string") {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid DateTime string: ${value}`);
+      }
+      return date;
+    }
+    throw new Error(`DateTime cannot be parsed from value: ${value}`);
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.STRING) {
+      const date = new Date(ast.value);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid DateTime string: ${ast.value}`);
+      }
+      return date;
+    }
+    throw new Error(`DateTime cannot be parsed from value: ${ast.value}`);
+  },
+});
+
 const resolvers = {
+  DateTime: DateTimeScalar,
   Query: {
     notifications: async (_, { userId }) => {
       try {

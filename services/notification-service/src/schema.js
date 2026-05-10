@@ -1,4 +1,6 @@
 const typeDefs = `#graphql
+  scalar DateTime
+
   type Notification {
     id: ID!
     userId: String!
@@ -7,8 +9,8 @@ const typeDefs = `#graphql
     message: String!
     relatedId: String
     read: Boolean!
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   type Query {
