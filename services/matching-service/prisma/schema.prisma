@@ -13,6 +13,13 @@ enum StudyMode {
   BOTH
 }
 
+enum BuddyRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 model MatchProfile {
   id                 String             @id @default(cuid())
   userId             String             @unique
@@ -39,4 +46,17 @@ model AvailabilitySlot {
 
   @@index([profileId])
   @@index([date])
+}
+
+model BuddyRequest {
+  id           String             @id @default(cuid())
+  fromUserId   String
+  toUserId     String
+  status       BuddyRequestStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  respondedAt  DateTime?
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@unique([fromUserId, toUserId])
 }

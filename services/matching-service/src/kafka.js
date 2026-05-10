@@ -5,6 +5,8 @@ const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
 const TOPIC_AVAILABILITY_UPDATED = "AvailabilityUpdated";
 const TOPIC_MATCH_IDENTIFIED = "MatchFound";
 const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
+const TOPIC_BUDDY_REQUEST_CREATED = "BuddyRequestCreated";
+const TOPIC_BUDDY_REQUEST_ACCEPTED = "BuddyRequestAccepted";
 
 const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
   .split(",")
@@ -21,6 +23,8 @@ function createKafkaPublisher() {
     return {
       publishMatchIdentified: async () => randomUUID(),
       publishMatchCandidatesUpdated: async () => randomUUID(),
+      publishBuddyRequestCreated: async () => randomUUID(),
+      publishBuddyRequestAccepted: async () => randomUUID(),
       disconnect: async () => {},
     };
   }
@@ -96,6 +100,52 @@ function createKafkaPublisher() {
     return cid;
   }
 
+  async function publishBuddyRequestCreated(payload, correlationId) {
+    const cid = correlationId || randomUUID();
+    await ensureConnected();
+
+    await producer.send({
+      topic: TOPIC_BUDDY_REQUEST_CREATED,
+      messages: [
+        {
+          key: payload.requestId || payload.receiverId || payload.senderId,
+          value: JSON.stringify({
+            event: TOPIC_BUDDY_REQUEST_CREATED,
+            timestamp: new Date().toISOString(),
+            producerService: "matching-service",
+            correlationId: cid,
+            payload,
+          }),
+        },
+      ],
+    });
+
+    return cid;
+  }
+
+  async function publishBuddyRequestAccepted(payload, correlationId) {
+    const cid = correlationId || randomUUID();
+    await ensureConnected();
+
+    await producer.send({
+      topic: TOPIC_BUDDY_REQUEST_ACCEPTED,
+      messages: [
+        {
+          key: payload.requestId || payload.userId,
+          value: JSON.stringify({
+            event: TOPIC_BUDDY_REQUEST_ACCEPTED,
+            timestamp: new Date().toISOString(),
+            producerService: "matching-service",
+            correlationId: cid,
+            payload,
+          }),
+        },
+      ],
+    });
+
+    return cid;
+  }
+
   async function disconnect() {
     if (connected) {
       await producer.disconnect();
@@ -106,6 +156,8 @@ function createKafkaPublisher() {
   return {
     publishMatchIdentified,
     publishMatchCandidatesUpdated,
+    publishBuddyRequestCreated,
+    publishBuddyRequestAccepted,
     disconnect,
   };
 }
@@ -125,6 +177,8 @@ module.exports = {
   TOPIC_AVAILABILITY_UPDATED,
   TOPIC_MATCH_IDENTIFIED,
   TOPIC_MATCH_CANDIDATES_UPDATED,
+  TOPIC_BUDDY_REQUEST_CREATED,
+  TOPIC_BUDDY_REQUEST_ACCEPTED,
   createKafkaPublisher,
   createConsumer,
 };

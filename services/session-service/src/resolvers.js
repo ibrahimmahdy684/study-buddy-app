@@ -2,6 +2,9 @@ import { GraphQLError } from "graphql";
 import prisma from "./db.js";
 import { canJoinCreatorSession } from "./matchState.js";
 
+const MATCHING_SERVICE_URL =
+  process.env.MATCHING_SERVICE_URL || "http://matching-service:4004/graphql";
+
 const authError = () =>
   new GraphQLError("Not authenticated", {
     extensions: { code: "UNAUTHENTICATED" },
@@ -13,6 +16,31 @@ const ensureAuthenticated = (context) => {
   }
   return context.authUser.id;
 };
+
+async function areBuddies(userId, buddyId) {
+  if (!userId || !buddyId) return false;
+
+  try {
+    const response = await fetch(MATCHING_SERVICE_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        query: "query AreBuddies($userId: String!, $buddyId: String!) { areBuddies(userId: $userId, buddyId: $buddyId) }",
+        variables: { userId, buddyId },
+      }),
+    });
+
+    const payload = await response.json();
+    return Boolean(payload?.data?.areBuddies);
+  } catch (error) {
+    console.warn(
+      `[session-service] buddy lookup failed: ${error.message || error}`
+    );
+    return false;
+  }
+}
 
 export const resolvers = {
   Query: {
@@ -83,12 +111,117 @@ export const resolvers = {
 
       return sessions.map(formatSession);
     },
+
+    getMySessionInvites: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const invites = await prisma.sessionInvite.findMany({
+        where: { invitedUserId: userId },
+        include: {
+          session: {
+            include: {
+              participants: { orderBy: { joinedAt: "asc" } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return invites.map(formatInvite);
+    },
+
+    getSessionInvites: async (_, { sessionId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const session = await prisma.studySession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        throw new GraphQLError("Session not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (session.creatorId !== userId) {
+        throw new GraphQLError("Only the session creator can view invites", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      const invites = await prisma.sessionInvite.findMany({
+        where: { sessionId },
+        include: {
+          session: {
+            include: {
+              participants: { orderBy: { joinedAt: "asc" } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return invites.map(formatInvite);
+    },
+
+    getMyJoinRequests: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const requests = await prisma.sessionJoinRequest.findMany({
+        where: { requesterId: userId },
+        include: {
+          session: {
+            include: {
+              participants: { orderBy: { joinedAt: "asc" } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return requests.map(formatJoinRequest);
+    },
+
+    getSessionJoinRequests: async (_, { sessionId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const session = await prisma.studySession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        throw new GraphQLError("Session not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (session.creatorId !== userId) {
+        throw new GraphQLError(
+          "Only the session creator can view join requests",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      const requests = await prisma.sessionJoinRequest.findMany({
+        where: { sessionId },
+        include: {
+          session: {
+            include: {
+              participants: { orderBy: { joinedAt: "asc" } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return requests.map(formatJoinRequest);
+    },
   },
 
   Mutation: {
     createSession: async (_, { input }, context) => {
       const userId = ensureAuthenticated(context);
-      const { topic, description, date, duration, type } = input;
+      const { topic, description, date, duration, type, location } = input;
 
       // Validate input
       if (duration <= 0 || duration > 480) {
@@ -112,6 +245,7 @@ export const resolvers = {
           date: sessionDate,
           duration,
           type,
+          location: location || null,
           creatorId: userId,
           creatorEmail: context.authUser?.email || context.userEmail || null,
           creatorPhoneNumber: context.userPhone || null,
@@ -139,6 +273,71 @@ export const resolvers = {
       });
 
       return formatSession(session);
+    },
+
+    updateSession: async (_, { sessionId, input }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const session = await prisma.studySession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        throw new GraphQLError("Session not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (session.creatorId !== userId) {
+        throw new GraphQLError(
+          "Only the session creator can update the session",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      if (session.status !== "SCHEDULED") {
+        throw new GraphQLError(
+          "Only scheduled sessions can be updated",
+          { extensions: { code: "BAD_USER_INPUT" } }
+        );
+      }
+
+      const updates = {};
+      if (input.topic !== undefined) updates.topic = input.topic;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.type !== undefined) updates.type = input.type;
+      if (input.location !== undefined) updates.location = input.location;
+
+      if (input.duration !== undefined) {
+        if (input.duration <= 0 || input.duration > 480) {
+          throw new GraphQLError("Duration must be between 1 and 480 minutes", {
+            extensions: { code: "BAD_USER_INPUT" },
+          });
+        }
+        updates.duration = input.duration;
+      }
+
+      if (input.date !== undefined) {
+        const sessionDate = new Date(input.date);
+        if (sessionDate <= new Date()) {
+          throw new GraphQLError("Session date must be in the future", {
+            extensions: { code: "BAD_USER_INPUT" },
+          });
+        }
+        updates.date = sessionDate;
+      }
+
+      const updated = await prisma.studySession.update({
+        where: { id: sessionId },
+        data: updates,
+        include: {
+          participants: {
+            orderBy: { joinedAt: "asc" },
+          },
+        },
+      });
+
+      return formatSession(updated);
     },
 
     joinSession: async (_, { sessionId }, context) => {
@@ -171,9 +370,13 @@ export const resolvers = {
         });
       }
 
-      if (!canJoinCreatorSession(userId, session.creatorId)) {
+      const buddyAllowed =
+        (await areBuddies(userId, session.creatorId)) ||
+        canJoinCreatorSession(userId, session.creatorId);
+
+      if (!buddyAllowed) {
         throw new GraphQLError(
-          "You can only join sessions created by your matched buddies",
+          "You can only join sessions created by your buddies",
           { extensions: { code: "FORBIDDEN" } }
         );
       }
@@ -189,7 +392,22 @@ export const resolvers = {
         });
       }
 
-      // Add user as participant
+      const invite = await prisma.sessionInvite.findUnique({
+        where: {
+          sessionId_invitedUserId: {
+            sessionId,
+            invitedUserId: userId,
+          },
+        },
+      });
+
+      if (!invite || invite.status !== "PENDING") {
+        throw new GraphQLError(
+          "This session requires an invite or approval before joining",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
       const updated = await prisma.studySession.update({
         where: { id: sessionId },
         data: {
@@ -197,6 +415,12 @@ export const resolvers = {
             create: {
               userId,
               role: "PARTICIPANT",
+            },
+          },
+          invites: {
+            update: {
+              where: { id: invite.id },
+              data: { status: "ACCEPTED", respondedAt: new Date() },
             },
           },
         },
@@ -364,6 +588,393 @@ export const resolvers = {
 
       return formatSession(updated);
     },
+
+    inviteToSession: async (_, { sessionId, userId: invitedUserId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const session = await prisma.studySession.findUnique({
+        where: { id: sessionId },
+        include: { participants: true },
+      });
+
+      if (!session) {
+        throw new GraphQLError("Session not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (session.creatorId !== userId) {
+        throw new GraphQLError(
+          "Only the session creator can invite buddies",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      if (session.status !== "SCHEDULED") {
+        throw new GraphQLError(
+          "Only scheduled sessions can be invited to",
+          { extensions: { code: "BAD_USER_INPUT" } }
+        );
+      }
+
+      if (invitedUserId === userId) {
+        throw new GraphQLError("Cannot invite yourself", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const isAlreadyParticipant = session.participants.some(
+        (p) => p.userId === invitedUserId
+      );
+
+      if (isAlreadyParticipant) {
+        throw new GraphQLError("User is already a participant", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const buddyAllowed =
+        (await areBuddies(userId, invitedUserId)) ||
+        canJoinCreatorSession(invitedUserId, userId);
+
+      if (!buddyAllowed) {
+        throw new GraphQLError(
+          "You can only invite your buddies to a session",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      const existing = await prisma.sessionInvite.findUnique({
+        where: {
+          sessionId_invitedUserId: {
+            sessionId,
+            invitedUserId,
+          },
+        },
+      });
+
+      let invite;
+      if (existing) {
+        invite = await prisma.sessionInvite.update({
+          where: { id: existing.id },
+          data: { status: "PENDING", respondedAt: null },
+        });
+      } else {
+        invite = await prisma.sessionInvite.create({
+          data: {
+            sessionId,
+            invitedUserId,
+            invitedById: userId,
+          },
+        });
+      }
+
+      return formatInvite(
+        await prisma.sessionInvite.findUnique({
+          where: { id: invite.id },
+          include: {
+            session: {
+              include: {
+                participants: { orderBy: { joinedAt: "asc" } },
+              },
+            },
+          },
+        })
+      );
+    },
+
+    respondToSessionInvite: async (_, { inviteId, accept }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const invite = await prisma.sessionInvite.findUnique({
+        where: { id: inviteId },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      if (!invite) {
+        throw new GraphQLError("Invite not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (invite.invitedUserId !== userId) {
+        throw new GraphQLError("Not authorized to respond to this invite", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (invite.status !== "PENDING") {
+        throw new GraphQLError("Invite has already been processed", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      if (!accept) {
+        const updated = await prisma.sessionInvite.update({
+          where: { id: inviteId },
+          data: { status: "DECLINED", respondedAt: new Date() },
+          include: {
+            session: {
+              include: { participants: { orderBy: { joinedAt: "asc" } } },
+            },
+          },
+        });
+        return formatInvite(updated);
+      }
+
+      const isParticipant = invite.session.participants.some(
+        (p) => p.userId === userId
+      );
+
+      const updatedInvite = await prisma.sessionInvite.update({
+        where: { id: inviteId },
+        data: { status: "ACCEPTED", respondedAt: new Date() },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      if (!isParticipant) {
+        await prisma.sessionParticipant.create({
+          data: {
+            sessionId: invite.sessionId,
+            userId,
+            role: "PARTICIPANT",
+          },
+        });
+      }
+
+      return formatInvite(updatedInvite);
+    },
+
+    requestToJoinSession: async (_, { sessionId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const session = await prisma.studySession.findUnique({
+        where: { id: sessionId },
+        include: { participants: true },
+      });
+
+      if (!session) {
+        throw new GraphQLError("Session not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (session.creatorId === userId) {
+        throw new GraphQLError("Session creator is already participating", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      if (session.status !== "SCHEDULED") {
+        throw new GraphQLError("Cannot request to join this session", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const isParticipant = session.participants.some(
+        (p) => p.userId === userId
+      );
+      if (isParticipant) {
+        throw new GraphQLError("User is already a participant", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const invite = await prisma.sessionInvite.findUnique({
+        where: {
+          sessionId_invitedUserId: {
+            sessionId,
+            invitedUserId: userId,
+          },
+        },
+      });
+
+      if (invite?.status === "PENDING") {
+        throw new GraphQLError("You have already been invited to this session", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const buddyAllowed =
+        (await areBuddies(userId, session.creatorId)) ||
+        canJoinCreatorSession(userId, session.creatorId);
+
+      if (!buddyAllowed) {
+        throw new GraphQLError(
+          "You can only request to join sessions created by your buddies",
+          { extensions: { code: "FORBIDDEN" } }
+        );
+      }
+
+      const existing = await prisma.sessionJoinRequest.findUnique({
+        where: {
+          sessionId_requesterId: {
+            sessionId,
+            requesterId: userId,
+          },
+        },
+      });
+
+      let request;
+      if (existing) {
+        request = await prisma.sessionJoinRequest.update({
+          where: { id: existing.id },
+          data: { status: "PENDING", respondedAt: null },
+        });
+      } else {
+        request = await prisma.sessionJoinRequest.create({
+          data: {
+            sessionId,
+            requesterId: userId,
+          },
+        });
+      }
+
+      return formatJoinRequest(
+        await prisma.sessionJoinRequest.findUnique({
+          where: { id: request.id },
+          include: {
+            session: {
+              include: {
+                participants: { orderBy: { joinedAt: "asc" } },
+              },
+            },
+          },
+        })
+      );
+    },
+
+    respondToJoinRequest: async (_, { requestId, approve }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const request = await prisma.sessionJoinRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      if (!request) {
+        throw new GraphQLError("Join request not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (request.session.creatorId !== userId) {
+        throw new GraphQLError("Only the session creator can review requests", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (request.status !== "PENDING") {
+        throw new GraphQLError("Join request has already been processed", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      if (!approve) {
+        const updated = await prisma.sessionJoinRequest.update({
+          where: { id: requestId },
+          data: {
+            status: "DECLINED",
+            respondedAt: new Date(),
+            reviewedById: userId,
+          },
+          include: {
+            session: {
+              include: { participants: { orderBy: { joinedAt: "asc" } } },
+            },
+          },
+        });
+        return formatJoinRequest(updated);
+      }
+
+      const isParticipant = request.session.participants.some(
+        (p) => p.userId === request.requesterId
+      );
+
+      if (!isParticipant) {
+        await prisma.sessionParticipant.create({
+          data: {
+            sessionId: request.sessionId,
+            userId: request.requesterId,
+            role: "PARTICIPANT",
+          },
+        });
+      }
+
+      const updated = await prisma.sessionJoinRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "APPROVED",
+          respondedAt: new Date(),
+          reviewedById: userId,
+        },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      return formatJoinRequest(updated);
+    },
+
+    cancelJoinRequest: async (_, { requestId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const request = await prisma.sessionJoinRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      if (!request) {
+        throw new GraphQLError("Join request not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (request.requesterId !== userId) {
+        throw new GraphQLError("Not authorized to cancel this request", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (request.status !== "PENDING") {
+        throw new GraphQLError("Only pending requests can be cancelled", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const updated = await prisma.sessionJoinRequest.update({
+        where: { id: requestId },
+        data: {
+          status: "CANCELLED",
+          respondedAt: new Date(),
+        },
+        include: {
+          session: {
+            include: { participants: { orderBy: { joinedAt: "asc" } } },
+          },
+        },
+      });
+
+      return formatJoinRequest(updated);
+    },
   },
 };
 
@@ -375,10 +986,31 @@ function formatSession(session) {
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
     participantCount: session.participants?.length || 0,
+    location: session.location || null,
     participants: (session.participants || []).map((p) => ({
       ...p,
       joinedAt: p.joinedAt.toISOString(),
     })),
+  };
+}
+
+function formatInvite(invite) {
+  if (!invite) return null;
+  return {
+    ...invite,
+    createdAt: invite.createdAt.toISOString(),
+    respondedAt: invite.respondedAt ? invite.respondedAt.toISOString() : null,
+    session: invite.session ? formatSession(invite.session) : null,
+  };
+}
+
+function formatJoinRequest(request) {
+  if (!request) return null;
+  return {
+    ...request,
+    createdAt: request.createdAt.toISOString(),
+    respondedAt: request.respondedAt ? request.respondedAt.toISOString() : null,
+    session: request.session ? formatSession(request.session) : null,
   };
 }
 

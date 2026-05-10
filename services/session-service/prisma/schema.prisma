@@ -18,6 +18,20 @@ enum SessionStatus {
   COMPLETED
 }
 
+enum SessionInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum SessionJoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
 enum ParticipantRole {
   CREATOR
   PARTICIPANT
@@ -32,6 +46,7 @@ model StudySession {
   duration    Int
   type        SessionType
   status      SessionStatus @default(SCHEDULED)
+  location    String?
   
   creatorId   String
   
@@ -40,6 +55,8 @@ model StudySession {
   creatorPhoneNumber String?
   
   participants SessionParticipant[]
+  invites     SessionInvite[]
+  joinRequests SessionJoinRequest[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -67,4 +84,34 @@ model SessionParticipant {
   @@map("session_participants")
   @@index([sessionId])
   @@index([userId])
+}
+
+model SessionInvite {
+  id            String               @id @default(uuid())
+  sessionId     String
+  session       StudySession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  invitedUserId String
+  invitedById   String
+  status        SessionInviteStatus  @default(PENDING)
+  createdAt     DateTime             @default(now())
+  respondedAt   DateTime?
+
+  @@unique([sessionId, invitedUserId])
+  @@index([sessionId])
+  @@index([invitedUserId])
+}
+
+model SessionJoinRequest {
+  id            String                    @id @default(uuid())
+  sessionId     String
+  session       StudySession              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  requesterId   String
+  reviewedById  String?
+  status        SessionJoinRequestStatus  @default(PENDING)
+  createdAt     DateTime                  @default(now())
+  respondedAt   DateTime?
+
+  @@unique([sessionId, requesterId])
+  @@index([sessionId])
+  @@index([requesterId])
 }

@@ -78,6 +78,7 @@ services:
       DATABASE_URL: ${MATCHING_DB_URL}
       KAFKA_BROKER: kafka:9092
       PORT: "4004"
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       kafka:
         condition: service_healthy
@@ -92,6 +93,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
       PORT: "4005"
+      MATCHING_SERVICE_URL: http://matching-service:4004/graphql
     depends_on:
       kafka:
         condition: service_healthy
