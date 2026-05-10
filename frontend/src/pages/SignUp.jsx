@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useMutation, gql } from '@apollo/client'
+import { useMutation, useApolloClient, gql } from '@apollo/client'
 import { BookOpen, Plus, X } from 'lucide-react'
 import { ImageWithFallback } from '../components/figma/ImageWithFallback'
 import registerImage from '../assets/landing/benefits-campus.jpg'
@@ -40,8 +40,10 @@ export default function SignUp() {
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState(null)
 
+  const client = useApolloClient()
   const [register, { loading }] = useMutation(REGISTER_MUTATION, {
-    onCompleted: () => {
+    onCompleted: async () => {
+      await client.resetStore()
       navigate('/study-preferences', { replace: true })
     },
     onError: (error) => {

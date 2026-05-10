@@ -46,6 +46,23 @@ const ProfilePage = () => {
 
         {!isLoading && user && (
           <>
+            {(!profile || !profile.studyMode || !profile.courses?.length) && (
+              <div className="flex items-center justify-between p-5 bg-[#FEF3F0] border border-[#E76F51]/30 rounded-xl">
+                <div>
+                  <h3 className="font-semibold text-[#2B2B2B] mb-1">Complete Your Profile</h3>
+                  <p className="text-[#5A5A5A] text-sm">
+                    Set up your study preferences and courses to get matched with study partners.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/profile-setup')}
+                  className="px-5 py-2 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors font-medium whitespace-nowrap ml-4"
+                >
+                  Set Up Profile
+                </button>
+              </div>
+            )}
+
             {/* Profile Header */}
             <div className="bg-gradient-to-r from-[#C76B4F] to-[#E76F51] rounded-xl shadow-lg p-8 text-white">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">

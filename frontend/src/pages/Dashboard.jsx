@@ -95,38 +95,25 @@ export function Dashboard() {
     )
   }
 
-  // First-run state: prompt to complete profile setup
-  if (!profileComplete) {
-    return (
-      <div className="max-w-4xl mx-auto">
-          <Card padding="lg">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-[#E76F51] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <h2
-                className="text-2xl font-bold text-[#2B2B2B] mb-2"
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-              >
-                Welcome to StudyBuddy, {user.name}!
-              </h2>
-              <p className="text-[#5A5A5A] mb-6">
-                Let&apos;s set up your profile to find the perfect study partners
-              </p>
-              <button
-                onClick={() => navigate('/profile-setup')}
-                className="px-6 py-3 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors"
-              >
-                Complete Your Profile
-              </button>
-            </div>
-          </Card>
-        </div>
-    )
-  }
-
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+        {!profileComplete && (
+          <div className="flex items-center justify-between p-4 bg-[#FEF3F0] border border-[#E76F51]/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-[#E76F51]" />
+              <p className="text-[#2B2B2B] text-sm">
+                Complete your profile to get matched with study partners.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/profile-setup')}
+              className="px-4 py-1.5 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors text-sm whitespace-nowrap"
+            >
+              Complete Profile
+            </button>
+          </div>
+        )}
+
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-[#C76B4F] to-[#E76F51] rounded-xl shadow-lg p-6 md:p-8 text-white">
           <h1
