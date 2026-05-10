@@ -5,7 +5,6 @@ import { Bell, BookOpen, Calendar, ChevronLeft, ChevronRight, Home, LogOut, Menu
 export const defaultMenuItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Find Buddies', path: '/matching' },
-  { icon: UserPlus, label: 'Buddy Requests', path: '/buddy-requests' },
   { icon: Calendar, label: 'Study Sessions', path: '/sessions' },
   { icon: MessageCircle, label: 'Messages', path: '/messages', badge: true },
   { icon: Bell, label: 'Notifications', path: '/notifications', badge: true },

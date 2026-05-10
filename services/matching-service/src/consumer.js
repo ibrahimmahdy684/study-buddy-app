@@ -1,12 +1,12 @@
-const prisma = require("./db");
-const { rankCandidates } = require("./scoring");
-const { getProfile, saveAvailability } = require("./resolvers");
-const {
+import prisma from "./db.js";
+import { rankCandidates } from "./scoring.js";
+import { getProfile, saveAvailability } from "./resolvers.js";
+import {
   createConsumer,
   createKafkaPublisher,
   TOPIC_USER_PREFERENCES_UPDATED,
   TOPIC_AVAILABILITY_UPDATED,
-} = require("./kafka");
+} from "./kafka.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -173,4 +173,4 @@ async function startConsumer({ matchThreshold = 50, limit = 1000 } = {}) {
   return consumer;
 }
 
-module.exports = { startConsumer, publishMatchesForUser };
+export { startConsumer, publishMatchesForUser };

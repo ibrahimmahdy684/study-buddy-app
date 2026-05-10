@@ -227,19 +227,6 @@ export const GET_SESSION_JOIN_REQUESTS = gql`
   }
 `
 
-export const GET_BUDDY_REQUESTS = gql`
-  query GetBuddyRequests {
-    buddyRequests {
-      id
-      fromUserId
-      toUserId
-      status
-      createdAt
-      respondedAt
-    }
-  }
-`
-
 export const GET_ACCEPTED_BUDDY_IDS = gql`
   query GetAcceptedBuddyIds {
     acceptedBuddyIds

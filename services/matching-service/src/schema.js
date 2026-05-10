@@ -5,13 +5,6 @@ const typeDefs = `#graphql
     BOTH
   }
 
-  enum BuddyRequestStatus {
-    PENDING
-    ACCEPTED
-    DECLINED
-    CANCELLED
-  }
-
   type MatchAvailabilitySlot {
     id: ID!
     date: String!
@@ -42,15 +35,6 @@ const typeDefs = `#graphql
     overlapMinutes: Int!
   }
 
-  type BuddyRequest {
-    id: ID!
-    fromUserId: String!
-    toUserId: String!
-    status: BuddyRequestStatus!
-    createdAt: String!
-    respondedAt: String
-  }
-
   input MatchProfileInput {
     studyPace: String
     studyMode: StudyMode
@@ -70,9 +54,6 @@ const typeDefs = `#graphql
     health: String!
     matchProfile(userId: String!): MatchProfile
     recommendedBuddies(userId: String!, limit: Int = 10, minScore: Int = 50): [MatchCandidate!]!
-    buddyRequests: [BuddyRequest!]!
-    incomingBuddyRequests: [BuddyRequest!]!
-    outgoingBuddyRequests: [BuddyRequest!]!
     acceptedBuddyIds: [String!]!
     areBuddies(userId: String!, buddyId: String!): Boolean!
   }
@@ -81,10 +62,6 @@ const typeDefs = `#graphql
     upsertMatchProfile(userId: String!, input: MatchProfileInput!): MatchProfile!
     setAvailability(userId: String!, slots: [AvailabilitySlotInput!]!): MatchProfile!
     recalculateMatches(userId: String!, limit: Int = 1000, minScore: Int = 50): [MatchCandidate!]!
-    sendBuddyRequest(toUserId: String!): BuddyRequest!
-    acceptBuddyRequest(requestId: ID!): BuddyRequest!
-    rejectBuddyRequest(requestId: ID!): BuddyRequest!
-    cancelBuddyRequest(requestId: ID!): BuddyRequest!
   }
 `;
 

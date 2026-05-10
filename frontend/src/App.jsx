@@ -12,7 +12,6 @@ import Chat from './pages/Chat'
 import Matching from './pages/Matching'
 import Sessions from './pages/Sessions'
 import MatchDetails from './pages/MatchDetails'
-import BuddyRequests from './pages/BuddyRequests'
 import CreateSession from './pages/CreateSession'
 import { DashboardShell } from './components'
 
@@ -40,7 +39,6 @@ function App() {
           <Route path="/matching/:buddyId" element={<MatchDetails />} />
           <Route path="/sessions" element={<Sessions />} />
           <Route path="/sessions/create" element={<CreateSession />} />
-          <Route path="/buddy-requests" element={<BuddyRequests />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<Chat />} />

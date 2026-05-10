@@ -12,7 +12,6 @@ import {
 import { useSession } from '../hooks/useSession'
 import { GET_PROFILE, GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { GET_OR_CREATE_CONVERSATION } from '../lib/graphql/mutations'
-import { SEND_BUDDY_REQUEST } from '../lib/graphql/mutations'
 import { Card, Spinner } from '../components'
 
 const MatchDetails = () => {
@@ -51,7 +50,6 @@ const MatchDetails = () => {
   const [getOrCreateConversation] = useMutation(
     GET_OR_CREATE_CONVERSATION
   )
-  const [sendBuddyRequest] = useMutation(SEND_BUDDY_REQUEST)
 
   const match = (matchesData?.recommendedBuddies || []).find(
     (candidate) => candidate.userId === buddyId
@@ -285,14 +283,6 @@ const MatchDetails = () => {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleBuddyRequest}
-              className="flex-1 px-6 py-3 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors flex items-center justify-center gap-2"
-            >
-              <Calendar className="w-5 h-5" />
-              Buddy Request
-            </button>
             <button
               type="button"
               onClick={handleMessage}

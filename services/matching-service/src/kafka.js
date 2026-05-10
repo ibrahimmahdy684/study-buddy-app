@@ -1,12 +1,12 @@
-const { Kafka } = require("kafkajs");
-const { randomUUID } = require("crypto");
+import { Kafka } from "kafkajs";
+import { randomUUID } from "crypto";
 
-const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
-const TOPIC_AVAILABILITY_UPDATED = "AvailabilityUpdated";
-const TOPIC_MATCH_IDENTIFIED = "MatchFound";
-const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
-const TOPIC_BUDDY_REQUEST_CREATED = "BuddyRequestCreated";
-const TOPIC_BUDDY_REQUEST_ACCEPTED = "BuddyRequestAccepted";
+export const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
+export const TOPIC_AVAILABILITY_UPDATED = "AvailabilityUpdated";
+export const TOPIC_MATCH_IDENTIFIED = "MatchFound";
+export const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
+export const TOPIC_BUDDY_REQUEST_CREATED = "BuddyRequestCreated";
+export const TOPIC_BUDDY_REQUEST_ACCEPTED = "BuddyRequestAccepted";
 
 const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
   .split(",")
@@ -18,7 +18,7 @@ const kafka = new Kafka({
   brokers,
 });
 
-function createKafkaPublisher() {
+export function createKafkaPublisher() {
   if (process.env.SKIP_KAFKA === "true") {
     return {
       publishMatchIdentified: async () => randomUUID(),
@@ -162,7 +162,7 @@ function createKafkaPublisher() {
   };
 }
 
-function createConsumer() {
+export function createConsumer() {
   if (process.env.SKIP_KAFKA_CONSUMER === "true") {
     return null;
   }
@@ -171,14 +171,3 @@ function createConsumer() {
     groupId: process.env.KAFKA_CONSUMER_GROUP || "matching-service-group",
   });
 }
-
-module.exports = {
-  TOPIC_USER_PREFERENCES_UPDATED,
-  TOPIC_AVAILABILITY_UPDATED,
-  TOPIC_MATCH_IDENTIFIED,
-  TOPIC_MATCH_CANDIDATES_UPDATED,
-  TOPIC_BUDDY_REQUEST_CREATED,
-  TOPIC_BUDDY_REQUEST_ACCEPTED,
-  createKafkaPublisher,
-  createConsumer,
-};

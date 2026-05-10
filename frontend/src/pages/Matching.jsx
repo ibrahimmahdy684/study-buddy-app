@@ -6,7 +6,6 @@ import { useSession } from '../hooks/useSession'
 import { GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { GET_OR_CREATE_CONVERSATION } from '../lib/graphql/mutations'
 import { Card, Spinner } from '../components'
-import { SEND_BUDDY_REQUEST } from '../lib/graphql/mutations'
 
 const MatchingPage = () => {
 	const navigate = useNavigate()
@@ -26,7 +25,6 @@ const MatchingPage = () => {
 	const [getOrCreateConversation] = useMutation(
 		GET_OR_CREATE_CONVERSATION
 	)
-	const [sendBuddyRequest] = useMutation(SEND_BUDDY_REQUEST)
 
 	const recommendedBuddies = data?.recommendedBuddies || []
 	const isLoading = userLoading || matchesLoading
@@ -216,16 +214,6 @@ const MatchingPage = () => {
 									className="flex-1 px-4 py-2 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors text-sm"
 								>
 									Message
-								</button>
-								<button
-									type="button"
-									onClick={(event) => {
-										event.stopPropagation()
-										handleSendBuddyRequest(buddy.userId)
-									}}
-									className="flex-1 px-4 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45A049] transition-colors text-sm"
-								>
-									Buddy Request
 								</button>
 							</div>
 						</div>

@@ -162,6 +162,4 @@ function rankCandidates(source, allProfiles, limit = 50, minScore = 50) {
   return ranked;
 }
 
-module.exports = {
-  rankCandidates,
-};
+export { rankCandidates };

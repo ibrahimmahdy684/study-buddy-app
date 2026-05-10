@@ -1,15 +1,16 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
-const { ApolloServer } = require("@apollo/server");
-const { startStandaloneServer } = require("@apollo/server/standalone");
-const { parse } = require("cookie");
-const jwt = require("jsonwebtoken");
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
+import { parse } from "cookie";
+import jwt from "jsonwebtoken";
 
-const prisma = require("./db");
-const { typeDefs } = require("./schema");
-const { resolvers } = require("./resolvers");
-const { createKafkaPublisher } = require("./kafka");
-const { startConsumer, publishMatchesForUser } = require("./consumer");
+import prisma from "./db.js";
+import typeDefs from "./schema.js";
+import { resolvers } from "./resolvers.js";
+import { createKafkaPublisher } from "./kafka.js";
+import { startConsumer, publishMatchesForUser } from "./consumer.js";
 
 const matchThreshold = Number(process.env.MATCH_EVENT_THRESHOLD || 50);
 const matchLimit = Number(process.env.MATCH_EVENT_LIMIT || 1000);
@@ -50,8 +51,7 @@ const run = async () => {
       }
 
       if (!authUser) {
-        const headerUserId =
-          req?.headers?.["x-user-id"] || req?.headers?.["user-id"];
+        const headerUserId = req?.headers?.["x-user-id"] || req?.headers?.["user-id"];
         if (headerUserId) {
           authUser = {
             id: String(headerUserId),
