@@ -4,11 +4,12 @@ import { Bell, BookOpen, Calendar, ChevronLeft, ChevronRight, Home, LogOut, Menu
 
 export const defaultMenuItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
-  { icon: Users, label: 'Find Buddies', path: '/matching' },
-  { icon: Calendar, label: 'Study Sessions', path: '/sessions' },
-  { icon: MessageCircle, label: 'Messages', path: '/messages', badge: true },
-  { icon: Bell, label: 'Notifications', path: '/notifications', badge: true },
-  { icon: UserCircle, label: 'Profile', path: '/profile' },
+  { icon: Users, label: 'Find Buddies', path: '/dashboard/matching' },
+  { icon: Users, label: 'Buddy Requests', path: '/dashboard/buddy-requests', badge: true },
+  { icon: Calendar, label: 'Study Sessions', path: '/dashboard/sessions' },
+  { icon: MessageCircle, label: 'Messages', path: '/dashboard/messages', badge: true },
+  { icon: Bell, label: 'Notifications', path: '/dashboard/notifications', badge: true },
+  { icon: UserCircle, label: 'Profile', path: '/dashboard/profile' },
 ]
 
 export function Navbar({ user, onLogout, sidebarOpen, onToggleSidebar }) {
