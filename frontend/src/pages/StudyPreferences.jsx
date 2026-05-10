@@ -336,14 +336,14 @@ export default function StudyPreferences() {
           </p>
         </div>
 
-        {queryLoading || availabilityLoading ? (
+        {queryLoading ? (
           <div className="p-12 flex justify-center">
             <div className="w-8 h-8 border-4 border-[#C76B4F]/20 border-t-[#C76B4F] rounded-full animate-spin" />
           </div>
-        ) : queryError || availabilityError ? (
+        ) : queryError ? (
           <div className="p-6">
             <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm border border-red-200">
-              Error loading data: {queryError?.message || availabilityError?.message}
+              Error loading preferences: {queryError.message}
             </div>
           </div>
         ) : (
@@ -414,6 +414,12 @@ export default function StudyPreferences() {
 
               <div className="p-6 space-y-5">
                 <p className="text-[10px] font-bold text-[#C76B4F] uppercase tracking-widest">Availability - Dates and Time Slots</p>
+
+                {availabilityError && (
+                  <div className="p-3 bg-amber-50 text-amber-700 rounded-lg text-sm border border-amber-200">
+                    Availability data couldn't be loaded. You can still save your study preferences.
+                  </div>
+                )}
 
                 <div className="border border-gray-200 rounded-xl overflow-hidden select-none">
                   <div className="flex items-center justify-between px-4 py-2.5 bg-[#F4E3C8]/60 border-b border-gray-100">

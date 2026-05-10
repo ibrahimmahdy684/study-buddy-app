@@ -13,7 +13,6 @@ import {
   GROUP_SIZE_LABELS,
   ACADEMIC_YEAR_LABELS,
 } from '../lib/constants'
-import { StudyMode, Course } from '../lib/types'
 
 const ProfileSetup = () => {
   const navigate = useNavigate()
@@ -23,17 +22,17 @@ const ProfileSetup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Step 1: Study Preferences
-  const [studyMode, setStudyMode] = useState<StudyMode>('BOTH')
-  const [preferredGroupSize, setPreferredGroupSize] = useState<number>(2)
+  const [studyMode, setStudyMode] = useState('BOTH')
+  const [preferredGroupSize, setPreferredGroupSize] = useState(2)
   const [studyPace, setStudyPace] = useState('MODERATE')
   const [studyStyle, setStudyStyle] = useState('VISUAL')
 
   // Step 2: Courses
-  const [courses, setCourses] = useState<Course[]>([])
+  const [courses, setCourses] = useState([])
   const [courseInput, setCourseInput] = useState({ name: '', code: '' })
 
   // Step 3: Help Topics
-  const [topics, setTopics] = useState<string[]>([])
+  const [topics, setTopics] = useState([])
   const [topicInput, setTopicInput] = useState('')
 
   // Mutations
@@ -59,7 +58,7 @@ const ProfileSetup = () => {
           },
         })
         setStep(2)
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message || 'Failed to save study preferences')
       } finally {
         setIsSubmitting(false)
@@ -82,7 +81,7 @@ const ProfileSetup = () => {
           })
         }
         setStep(3)
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message || 'Failed to save courses')
       } finally {
         setIsSubmitting(false)
@@ -100,7 +99,7 @@ const ProfileSetup = () => {
           })
         }
         setStep(4)
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message || 'Failed to save help topics')
       } finally {
         setIsSubmitting(false)
@@ -125,7 +124,7 @@ const ProfileSetup = () => {
     }
   }
 
-  const removeCourse = (id: string) => {
+  const removeCourse = (id) => {
     setCourses(courses.filter((c) => c.id !== id))
   }
 
@@ -136,7 +135,7 @@ const ProfileSetup = () => {
     }
   }
 
-  const removeTopic = (index: number) => {
+  const removeTopic = (index) => {
     setTopics(topics.filter((_, i) => i !== index))
   }
 
@@ -211,7 +210,7 @@ const ProfileSetup = () => {
                     {Object.entries(STUDY_MODE_LABELS).map(([value, label]) => (
                       <button
                         key={value}
-                        onClick={() => setStudyMode(value as StudyMode)}
+                        onClick={() => setStudyMode(value)}
                         className={`p-3 rounded-lg border-2 font-medium transition-all ${
                           studyMode === value
                             ? 'border-[#C76B4F] bg-[#FEF3F0] text-[#C76B4F]'

@@ -44,6 +44,7 @@ services:
     environment:
       DATABASE_URL: ${AVAILABILITY_DB_URL}
       KAFKA_BROKER: kafka:9092
+      PORT: "4003"
     depends_on: [kafka]
 
   matching-service:
@@ -53,6 +54,7 @@ services:
    environment:
      DATABASE_URL: ${MATCHING_DB_URL}
      KAFKA_BROKER: kafka:9092
+     PORT: "4004"
    depends_on: [kafka]
 
   session-service:
@@ -63,6 +65,7 @@ services:
      DATABASE_URL: ${SESSION_DB_URL}
      JWT_SECRET: ${JWT_SECRET}
      KAFKA_BROKER: kafka:9092
+     PORT: "4005"
    depends_on: [kafka]
 
   notification-service:
@@ -82,6 +85,7 @@ services:
     environment:
       DATABASE_URL: ${MESSAGING_DB_URL}
       KAFKA_BROKER: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
       PORT: "4007"
     depends_on: [kafka]
 
@@ -95,6 +99,7 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET}
       ALLOW_PARTIAL_SCHEMA: "false"
+    restart: on-failure
     depends_on:
       - user-service
       - profile-service
