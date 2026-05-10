@@ -35,6 +35,26 @@ const getIcon = (type) => {
   }
 }
 
+const formatNotificationDate = (dateString) => {
+  try {
+    if (!dateString) return 'Unknown date'
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return 'Invalid date'
+    }
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch (error) {
+    console.error('Error formatting date:', dateString, error)
+    return 'Invalid date'
+  }
+}
+
 const NotificationsPage = () => {
   const { user, loading: userLoading } = useSession()
   const [actionError, setActionError] = useState('')
@@ -169,7 +189,7 @@ const NotificationsPage = () => {
                         {notification.message}
                       </p>
                       <p className="text-xs text-[#5A5A5A]">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {formatNotificationDate(notification.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -225,7 +245,7 @@ const NotificationsPage = () => {
                         {notification.message}
                       </p>
                       <p className="text-xs text-[#5A5A5A]">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {formatNotificationDate(notification.createdAt)}
                       </p>
                     </div>
                     <button
