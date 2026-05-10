@@ -21,6 +21,7 @@ async function subscribeToEvents(consumer, onEvent) {
   const topics = [
     "UserPreferencesUpdated",
     "BuddyRequestCreated",
+    "BuddyRequestAccepted",
     "StudySessionCreated",
     "StudySessionJoined",
     "MessageSent",

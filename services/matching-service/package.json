@@ -17,8 +17,10 @@
   "dependencies": {
     "@apollo/server": "^5.5.0",
     "@prisma/client": "^6.19.3",
+    "cookie": "^1.0.2",
     "dotenv": "^17.4.0",
     "graphql": "^16.13.2",
+    "jsonwebtoken": "^9.0.3",
     "kafkajs": "^2.2.4"
   },
   "devDependencies": {

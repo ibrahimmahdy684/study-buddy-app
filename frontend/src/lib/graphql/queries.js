@@ -125,6 +125,7 @@ export const GET_MY_SESSIONS = gql`
       duration
       type
       status
+      location
       creatorId
       creatorEmail
       creatorPhoneNumber
@@ -151,11 +152,97 @@ export const GET_UPCOMING_SESSIONS = gql`
       duration
       type
       status
+      location
       creatorId
       participantCount
       createdAt
       updatedAt
     }
+  }
+`
+
+export const GET_MY_SESSION_INVITES = gql`
+  query GetMySessionInvites {
+    getMySessionInvites {
+      id
+      sessionId
+      invitedUserId
+      invitedById
+      status
+      createdAt
+      respondedAt
+      session {
+        id
+        topic
+        description
+        date
+        duration
+        type
+        status
+        location
+        creatorId
+        participantCount
+      }
+    }
+  }
+`
+
+export const GET_MY_JOIN_REQUESTS = gql`
+  query GetMyJoinRequests {
+    getMyJoinRequests {
+      id
+      sessionId
+      requesterId
+      reviewedById
+      status
+      createdAt
+      respondedAt
+      session {
+        id
+        topic
+        description
+        date
+        duration
+        type
+        status
+        location
+        creatorId
+        participantCount
+      }
+    }
+  }
+`
+
+export const GET_SESSION_JOIN_REQUESTS = gql`
+  query GetSessionJoinRequests($sessionId: ID!) {
+    getSessionJoinRequests(sessionId: $sessionId) {
+      id
+      sessionId
+      requesterId
+      reviewedById
+      status
+      createdAt
+      respondedAt
+    }
+  }
+`
+
+export const GET_BUDDY_REQUESTS = gql`
+  query GetBuddyRequests {
+    buddyRequests {
+      id
+      fromUserId
+      toUserId
+      status
+      createdAt
+      respondedAt
+    }
+  }
+`
+
+export const GET_ACCEPTED_BUDDY_IDS = gql`
+  query GetAcceptedBuddyIds {
+    acceptedBuddyIds
   }
 `
 

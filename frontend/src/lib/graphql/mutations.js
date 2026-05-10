@@ -124,3 +124,169 @@ export const GET_OR_CREATE_CONVERSATION = gql`
     }
   }
 `
+
+export const CREATE_SESSION = gql`
+  mutation CreateSession($input: CreateSessionInput!) {
+    createSession(input: $input) {
+      id
+      topic
+      description
+      date
+      duration
+      type
+      status
+      location
+      creatorId
+      participantCount
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const UPDATE_SESSION = gql`
+  mutation UpdateSession($sessionId: ID!, $input: UpdateSessionInput!) {
+    updateSession(sessionId: $sessionId, input: $input) {
+      id
+      topic
+      description
+      date
+      duration
+      type
+      status
+      location
+      creatorId
+      participantCount
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const CANCEL_SESSION = gql`
+  mutation CancelSession($sessionId: ID!) {
+    cancelSession(sessionId: $sessionId) {
+      id
+      status
+      updatedAt
+    }
+  }
+`
+
+export const LEAVE_SESSION = gql`
+  mutation LeaveSession($sessionId: ID!) {
+    leaveSession(sessionId: $sessionId) {
+      id
+      participantCount
+    }
+  }
+`
+
+export const INVITE_TO_SESSION = gql`
+  mutation InviteToSession($sessionId: ID!, $userId: String!) {
+    inviteToSession(sessionId: $sessionId, userId: $userId) {
+      id
+      sessionId
+      invitedUserId
+      invitedById
+      status
+      createdAt
+      respondedAt
+    }
+  }
+`
+
+export const RESPOND_TO_SESSION_INVITE = gql`
+  mutation RespondToSessionInvite($inviteId: ID!, $accept: Boolean!) {
+    respondToSessionInvite(inviteId: $inviteId, accept: $accept) {
+      id
+      status
+      respondedAt
+      sessionId
+    }
+  }
+`
+
+export const REQUEST_TO_JOIN_SESSION = gql`
+  mutation RequestToJoinSession($sessionId: ID!) {
+    requestToJoinSession(sessionId: $sessionId) {
+      id
+      status
+      sessionId
+      requesterId
+      createdAt
+    }
+  }
+`
+
+export const RESPOND_TO_JOIN_REQUEST = gql`
+  mutation RespondToJoinRequest($requestId: ID!, $approve: Boolean!) {
+    respondToJoinRequest(requestId: $requestId, approve: $approve) {
+      id
+      status
+      respondedAt
+      sessionId
+      requesterId
+    }
+  }
+`
+
+export const CANCEL_JOIN_REQUEST = gql`
+  mutation CancelJoinRequest($requestId: ID!) {
+    cancelJoinRequest(requestId: $requestId) {
+      id
+      status
+      respondedAt
+      sessionId
+    }
+  }
+`
+
+export const SEND_BUDDY_REQUEST = gql`
+  mutation SendBuddyRequest($toUserId: String!) {
+    sendBuddyRequest(toUserId: $toUserId) {
+      id
+      fromUserId
+      toUserId
+      status
+      createdAt
+      respondedAt
+    }
+  }
+`
+
+export const ACCEPT_BUDDY_REQUEST = gql`
+  mutation AcceptBuddyRequest($requestId: ID!) {
+    acceptBuddyRequest(requestId: $requestId) {
+      id
+      fromUserId
+      toUserId
+      status
+      respondedAt
+    }
+  }
+`
+
+export const REJECT_BUDDY_REQUEST = gql`
+  mutation RejectBuddyRequest($requestId: ID!) {
+    rejectBuddyRequest(requestId: $requestId) {
+      id
+      fromUserId
+      toUserId
+      status
+      respondedAt
+    }
+  }
+`
+
+export const CANCEL_BUDDY_REQUEST = gql`
+  mutation CancelBuddyRequest($requestId: ID!) {
+    cancelBuddyRequest(requestId: $requestId) {
+      id
+      fromUserId
+      toUserId
+      status
+      respondedAt
+    }
+  }
+`

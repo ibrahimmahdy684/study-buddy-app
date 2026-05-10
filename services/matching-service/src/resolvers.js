@@ -1,3 +1,4 @@
+const { GraphQLError } = require("graphql");
 const prisma = require("./db");
 const { rankCandidates } = require("./scoring");
 
@@ -73,6 +74,43 @@ function assertNoOverlaps(slots) {
   }
 }
 
+const authError = () =>
+  new GraphQLError("Not authenticated", {
+    extensions: { code: "UNAUTHENTICATED" },
+  });
+
+function ensureAuthenticated(context) {
+  if (!context?.authUser?.id) {
+    throw authError();
+  }
+  return context.authUser.id;
+}
+
+function formatBuddyRequest(request) {
+  if (!request) return null;
+  return {
+    ...request,
+    createdAt: request.createdAt.toISOString(),
+    respondedAt: request.respondedAt ? request.respondedAt.toISOString() : null,
+  };
+}
+
+async function checkAreBuddies(userId, buddyId) {
+  if (!userId || !buddyId) return false;
+
+  const existing = await prisma.buddyRequest.findFirst({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { fromUserId: userId, toUserId: buddyId },
+        { fromUserId: buddyId, toUserId: userId },
+      ],
+    },
+  });
+
+  return Boolean(existing);
+}
+
 // ─── Data access ──────────────────────────────────────────────────────────────
 
 async function getProfile(userId) {
@@ -146,6 +184,53 @@ const resolvers = {
 
       return rankCandidates(source, allProfiles, limit, minScore);
     },
+
+    buddyRequests: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+      const requests = await prisma.buddyRequest.findMany({
+        where: {
+          OR: [{ fromUserId: userId }, { toUserId: userId }],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      return requests.map(formatBuddyRequest);
+    },
+
+    incomingBuddyRequests: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+      const requests = await prisma.buddyRequest.findMany({
+        where: { toUserId: userId },
+        orderBy: { createdAt: "desc" },
+      });
+      return requests.map(formatBuddyRequest);
+    },
+
+    outgoingBuddyRequests: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+      const requests = await prisma.buddyRequest.findMany({
+        where: { fromUserId: userId },
+        orderBy: { createdAt: "desc" },
+      });
+      return requests.map(formatBuddyRequest);
+    },
+
+    acceptedBuddyIds: async (_, __, context) => {
+      const userId = ensureAuthenticated(context);
+      const requests = await prisma.buddyRequest.findMany({
+        where: {
+          status: "ACCEPTED",
+          OR: [{ fromUserId: userId }, { toUserId: userId }],
+        },
+      });
+
+      return requests.map((request) =>
+        request.fromUserId === userId ? request.toUserId : request.fromUserId
+      );
+    },
+
+    areBuddies: async (_, { userId, buddyId }) => {
+      return checkAreBuddies(userId, buddyId);
+    },
   },
 
   Mutation: {
@@ -197,6 +282,186 @@ const resolvers = {
       const candidates = rankCandidates(source, allProfiles, limit, minScore);
       await publishMatches(userId, candidates);
       return candidates;
+    },
+
+    sendBuddyRequest: async (_, { toUserId }, context) => {
+      const fromUserId = ensureAuthenticated(context);
+
+      if (toUserId === fromUserId) {
+        throw new GraphQLError("Cannot send a buddy request to yourself", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const existing = await prisma.buddyRequest.findFirst({
+        where: {
+          OR: [
+            { fromUserId, toUserId },
+            { fromUserId: toUserId, toUserId: fromUserId },
+          ],
+        },
+      });
+
+      if (existing?.status === "ACCEPTED") {
+        throw new GraphQLError("You are already buddies", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      if (existing?.status === "PENDING") {
+        if (existing.toUserId === fromUserId) {
+          const accepted = await prisma.buddyRequest.update({
+            where: { id: existing.id },
+            data: { status: "ACCEPTED", respondedAt: new Date() },
+          });
+
+          if (context.publishBuddyRequestAccepted) {
+            await context.publishBuddyRequestAccepted({
+              requestId: accepted.id,
+              userId: fromUserId,
+              buddyId: toUserId,
+            });
+          }
+
+          return formatBuddyRequest(accepted);
+        }
+
+        return formatBuddyRequest(existing);
+      }
+
+      const direct = await prisma.buddyRequest.findUnique({
+        where: { fromUserId_toUserId: { fromUserId, toUserId } },
+      });
+
+      let request;
+      if (direct) {
+        request = await prisma.buddyRequest.update({
+          where: { id: direct.id },
+          data: { status: "PENDING", respondedAt: null },
+        });
+      } else {
+        request = await prisma.buddyRequest.create({
+          data: { fromUserId, toUserId },
+        });
+      }
+
+      if (context.publishBuddyRequestCreated) {
+        await context.publishBuddyRequestCreated({
+          requestId: request.id,
+          senderId: fromUserId,
+          receiverId: toUserId,
+          senderName: context.authUser?.email || "A study buddy",
+        });
+      }
+
+      return formatBuddyRequest(request);
+    },
+
+    acceptBuddyRequest: async (_, { requestId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const request = await prisma.buddyRequest.findUnique({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new GraphQLError("Buddy request not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (request.toUserId !== userId) {
+        throw new GraphQLError("Not authorized to accept this request", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (request.status !== "PENDING") {
+        throw new GraphQLError("Buddy request already processed", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const updated = await prisma.buddyRequest.update({
+        where: { id: requestId },
+        data: { status: "ACCEPTED", respondedAt: new Date() },
+      });
+
+      if (context.publishBuddyRequestAccepted) {
+        await context.publishBuddyRequestAccepted({
+          requestId: updated.id,
+          userId: updated.toUserId,
+          buddyId: updated.fromUserId,
+        });
+      }
+
+      return formatBuddyRequest(updated);
+    },
+
+    rejectBuddyRequest: async (_, { requestId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const request = await prisma.buddyRequest.findUnique({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new GraphQLError("Buddy request not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (request.toUserId !== userId) {
+        throw new GraphQLError("Not authorized to reject this request", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (request.status !== "PENDING") {
+        throw new GraphQLError("Buddy request already processed", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const updated = await prisma.buddyRequest.update({
+        where: { id: requestId },
+        data: { status: "DECLINED", respondedAt: new Date() },
+      });
+
+      return formatBuddyRequest(updated);
+    },
+
+    cancelBuddyRequest: async (_, { requestId }, context) => {
+      const userId = ensureAuthenticated(context);
+
+      const request = await prisma.buddyRequest.findUnique({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new GraphQLError("Buddy request not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+
+      if (request.fromUserId !== userId) {
+        throw new GraphQLError("Not authorized to cancel this request", {
+          extensions: { code: "FORBIDDEN" },
+        });
+      }
+
+      if (request.status !== "PENDING") {
+        throw new GraphQLError("Only pending requests can be cancelled", {
+          extensions: { code: "BAD_USER_INPUT" },
+        });
+      }
+
+      const updated = await prisma.buddyRequest.update({
+        where: { id: requestId },
+        data: { status: "CANCELLED", respondedAt: new Date() },
+      });
+
+      return formatBuddyRequest(updated);
     },
   },
 };

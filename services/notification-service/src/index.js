@@ -36,6 +36,19 @@ const handleNotificationEvent = async (topic, event) => {
         console.log(`Notification created for user ${payload.receiverId}`);
         break;
 
+      case "BuddyRequestAccepted":
+        await prisma.notification.create({
+          data: {
+            userId: payload.buddyId,
+            type: "buddy_request_accepted",
+            title: "Buddy Request Accepted",
+            message: "Your study buddy request was accepted",
+            relatedId: payload.requestId,
+          },
+        });
+        console.log(`Buddy request accepted notification for ${payload.buddyId}`);
+        break;
+
       case "StudySessionCreated":
         // Notify the session creator
         await prisma.notification.create({
