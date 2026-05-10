@@ -27,7 +27,7 @@ const services = [
   },
   {
     name: "messaging",
-    url: process.env.MESSAGING_SERVICE_URL || "http://messaging-service:4007",
+    url: process.env.MESSAGING_SERVICE_URL || "http://messaging-service:4007/graphql",
   },
 ];
 

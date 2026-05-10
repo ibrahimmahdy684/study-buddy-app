@@ -4,10 +4,18 @@ services:
     image: confluentinc/cp-zookeeper:7.4.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok,srvr"
+    healthcheck:
+      test: echo srvr | nc localhost 2181 | grep Zookeeper
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
-    depends_on: [zookeeper]
+    depends_on:
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -15,6 +23,12 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   # ── Microservices ─────────────────────────────────
   user-service:
@@ -25,7 +39,10 @@ services:
       DATABASE_URL: ${USER_DB_URL} # NeonDB URL from .env
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
-    depends_on: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   profile-service:
     build: ./services/profile-service
@@ -35,7 +52,10 @@ services:
       DATABASE_URL: ${PROFILE_DB_URL}
       KAFKA_BROKER: kafka:9092
       PORT: "4002"
-    depends_on: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   availability-service:
     build: ./services/availability-service
@@ -45,28 +65,37 @@ services:
       DATABASE_URL: ${AVAILABILITY_DB_URL}
       KAFKA_BROKER: kafka:9092
       PORT: "4003"
-    depends_on: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   matching-service:
-   build: ./services/matching-service
-   ports:
-     - "4004:4004"
-   environment:
-     DATABASE_URL: ${MATCHING_DB_URL}
-     KAFKA_BROKER: kafka:9092
-     PORT: "4004"
-   depends_on: [kafka]
+    build: ./services/matching-service
+    ports:
+      - "4004:4004"
+    environment:
+      DATABASE_URL: ${MATCHING_DB_URL}
+      KAFKA_BROKER: kafka:9092
+      PORT: "4004"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   session-service:
-   build: ./services/session-service
-   ports:
-     - "4005:4005"
-   environment:
-     DATABASE_URL: ${SESSION_DB_URL}
-     JWT_SECRET: ${JWT_SECRET}
-     KAFKA_BROKER: kafka:9092
-     PORT: "4005"
-   depends_on: [kafka]
+    build: ./services/session-service
+    ports:
+      - "4005:4005"
+    environment:
+      DATABASE_URL: ${SESSION_DB_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_BROKER: kafka:9092
+      PORT: "4005"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   notification-service:
     build: ./services/notification-service
@@ -76,7 +105,10 @@ services:
       DATABASE_URL: ${NOTIFICATION_DB_URL}
       KAFKA_BROKER: kafka:9092
       PORT: "4006"
-    depends_on: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   messaging-service:
     build: ./services/messaging-service
@@ -87,7 +119,10 @@ services:
       KAFKA_BROKER: kafka:9092
       JWT_SECRET: ${JWT_SECRET}
       PORT: "4007"
-    depends_on: [kafka]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   # ── GraphQL Gateway ───────────────────────────────
   gateway:

@@ -24,12 +24,12 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<SignIn />} />
         <Route path="/register" element={<SignUp />} />
-        <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/study-preferences" element={<StudyPreferences />} />
 
         {/* Authenticated app shell (Navbar + Sidebar wrap every child) */}
         <Route element={<DashboardShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
