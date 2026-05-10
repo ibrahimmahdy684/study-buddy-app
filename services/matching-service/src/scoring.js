@@ -148,7 +148,7 @@ function scoreMatch(source, candidate) {
   };
 }
 
-function rankCandidates(source, allProfiles, limit = 50, minScore = 50) {
+function rankCandidates(source, allProfiles, limit = 10, minScore = 0) {
   const ranked = allProfiles
     .filter((p) => p.userId !== source.userId)
     .map((candidate) => scoreMatch(source, candidate))
