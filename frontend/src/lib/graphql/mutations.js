@@ -59,6 +59,47 @@ export const SET_HELP_TOPICS = gql`
   }
 `
 
+export const UPDATE_ME = gql`
+  mutation UpdateMe($input: UpdateMeInput!) {
+    updateMe(input: $input) {
+      id
+      name
+      email
+      phone
+      contactEmail
+      university
+      academicYear
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const UPDATE_PROFILE = gql`
+  mutation UpdateProfile($userId: String!, $bio: String) {
+    updateProfile(userId: $userId, bio: $bio) {
+      id
+      userId
+      bio
+      studyPace
+      studyMode
+      preferredGroupSize
+      studyStyle
+      courses {
+        id
+        name
+        code
+      }
+      helpTopics {
+        id
+        topic
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
 export const MARK_AS_READ = gql`
   mutation MarkAsRead($notificationId: String!) {
     markAsRead(notificationId: $notificationId) {
