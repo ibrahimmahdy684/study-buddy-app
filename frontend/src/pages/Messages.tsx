@@ -18,10 +18,11 @@ import {
 } from '../lib/graphql/queries'
 import { SEND_MESSAGE } from '../lib/graphql/mutations'
 import { MESSAGE_SENT_SUBSCRIPTION } from '../lib/graphql/subscriptions'
+import { Conversation, Message } from '../lib/types'
 import { Spinner } from '../components'
 import { useSubscription } from '@apollo/client'
 
-const formatTimestamp = (raw) => {
+const formatTimestamp = (raw?: string | number) => {
   if (raw === undefined || raw === null || raw === '') return ''
   const ms = Number.isFinite(Number(raw)) ? Number(raw) : Date.parse(String(raw))
   if (!Number.isFinite(ms)) return ''
@@ -36,17 +37,19 @@ const formatTimestamp = (raw) => {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-const MessagesPage = () => {
+const MessagesPage: React.FC = () => {
   const navigate = useNavigate()
-  const { conversationId } = useParams()
+  const { conversationId } = useParams<{ conversationId?: string }>()
   const { user, loading: userLoading } = useSession()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [newMessage, setNewMessage] = useState('')
   const [sendError, setSendError] = useState('')
-  const messagesEndRef = useRef(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const { data: convData, loading: convLoading } = useQuery(GET_MY_CONVERSATIONS, {
+  const { data: convData, loading: convLoading } = useQuery<{
+    getMyConversations: Conversation[]
+  }>(GET_MY_CONVERSATIONS, {
     skip: !user?.id,
     errorPolicy: 'all',
   })
@@ -67,7 +70,7 @@ const MessagesPage = () => {
     data: messagesData,
     loading: messagesLoading,
     subscribeToMore,
-  } = useQuery(GET_MESSAGES, {
+  } = useQuery<{ getMessages: Message[] }>(GET_MESSAGES, {
     variables: { conversationId: conversationId || '', limit: 100, offset: 0 },
     skip: !conversationId,
     errorPolicy: 'all',
@@ -125,11 +128,11 @@ const MessagesPage = () => {
     )
   })
 
-  const handleSelectConversation = (id) => {
+  const handleSelectConversation = (id: string) => {
     navigate(`/messages/${id}`)
   }
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newMessage.trim() || !otherParticipantId) {
       if (!otherParticipantId) {
@@ -146,7 +149,7 @@ const MessagesPage = () => {
         },
       })
       setNewMessage('')
-    } catch (err) {
+    } catch (err: any) {
       setSendError(err.message || 'Failed to send message')
     }
   }

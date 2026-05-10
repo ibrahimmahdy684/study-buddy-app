@@ -9,6 +9,7 @@ import {
   GROUP_SIZE_LABELS,
   ACADEMIC_YEAR_LABELS,
 } from '../lib/constants'
+import { Profile as ProfileType } from '../lib/types'
 import { Card, Spinner } from '../components'
 
 const ProfilePage = () => {
@@ -19,7 +20,7 @@ const ProfilePage = () => {
     data,
     loading: profileLoading,
     error,
-  } = useQuery(GET_PROFILE, {
+  } = useQuery<{ profile: ProfileType }>(GET_PROFILE, {
     variables: { userId: user?.id },
     skip: !user?.id,
     errorPolicy: 'all',
