@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\Desktop\\\\study-buddy-platform\" -Recurse -Directory -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(grep -r \"BuddyRequest\\\\|buddyRequest\" \"d:\\\\Desktop\\\\study-buddy-platform/services\" --include=\"*.prisma\" --include=\"*.js\" ! -path \"*/node_modules/*\")"
+    ]
+  }
+}

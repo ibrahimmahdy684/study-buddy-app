@@ -42,6 +42,31 @@ async function areBuddies(userId, buddyId) {
   }
 }
 
+async function hasMinMatchScore(userId, targetId, minScore = 50) {
+  if (!userId || !targetId) return false;
+  try {
+    const response = await fetch(MATCHING_SERVICE_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        query: `query CheckMatch($userId: String!, $minScore: Int) {
+          recommendedBuddies(userId: $userId, limit: 100, minScore: $minScore) {
+            userId
+            score
+          }
+        }`,
+        variables: { userId, minScore },
+      }),
+    });
+    const payload = await response.json();
+    const candidates = payload?.data?.recommendedBuddies || [];
+    return candidates.some((c) => c.userId === targetId);
+  } catch (error) {
+    console.warn(`[session-service] match score lookup failed: ${error.message || error}`);
+    return false;
+  }
+}
+
 export const resolvers = {
   Query: {
     health: () => "session-service:ok",
@@ -633,13 +658,13 @@ export const resolvers = {
         });
       }
 
-      const buddyAllowed =
-        (await areBuddies(userId, invitedUserId)) ||
+      const isMatchedBuddy =
+        (await hasMinMatchScore(userId, invitedUserId)) ||
         canJoinCreatorSession(invitedUserId, userId);
 
-      if (!buddyAllowed) {
+      if (!isMatchedBuddy) {
         throw new GraphQLError(
-          "You can only invite your buddies to a session",
+          "You can only invite users with a match score of 50% or higher",
           { extensions: { code: "FORBIDDEN" } }
         );
       }

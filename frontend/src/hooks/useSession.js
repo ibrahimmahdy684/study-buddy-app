@@ -15,7 +15,7 @@ export const GET_ME = gql`
 
 export function useSession() {
   const { data, loading, error, refetch } = useQuery(GET_ME, {
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore'
   })
 

@@ -1,6 +1,27 @@
-const { GraphQLError } = require("graphql");
-const prisma = require("./db");
-const { rankCandidates } = require("./scoring");
+import { GraphQLError } from "graphql";
+import prisma from "./db.js";
+import { rankCandidates } from "./scoring.js";
+
+const matchCache = new Map();
+const MATCH_CACHE_TTL_MS = 2 * 60 * 1000;
+
+function getCachedMatches(userId) {
+  const entry = matchCache.get(userId);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > MATCH_CACHE_TTL_MS) {
+    matchCache.delete(userId);
+    return null;
+  }
+  return entry.candidates;
+}
+
+function setCachedMatches(userId, candidates) {
+  matchCache.set(userId, { candidates, ts: Date.now() });
+}
+
+function invalidateMatchCache(userId) {
+  matchCache.delete(userId);
+}
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
 
@@ -86,15 +107,6 @@ function ensureAuthenticated(context) {
   return context.authUser.id;
 }
 
-function formatBuddyRequest(request) {
-  if (!request) return null;
-  return {
-    ...request,
-    createdAt: request.createdAt.toISOString(),
-    respondedAt: request.respondedAt ? request.respondedAt.toISOString() : null,
-  };
-}
-
 async function checkAreBuddies(userId, buddyId) {
   if (!userId || !buddyId) return false;
 
@@ -178,40 +190,18 @@ const resolvers = {
       const source = await getProfile(userId);
       if (!source) throw new Error("Match profile not found for this user");
 
-      const allProfiles = await prisma.matchProfile.findMany({
-        include: { availabilities: true },
-      });
+      let ranked = getCachedMatches(userId);
+      if (!ranked) {
+        const allProfiles = await prisma.matchProfile.findMany({
+          include: { availabilities: true },
+        });
+        ranked = rankCandidates(source, allProfiles, null, 0);
+        setCachedMatches(userId, ranked);
+      }
 
-      return rankCandidates(source, allProfiles, limit, minScore);
-    },
-
-    buddyRequests: async (_, __, context) => {
-      const userId = ensureAuthenticated(context);
-      const requests = await prisma.buddyRequest.findMany({
-        where: {
-          OR: [{ fromUserId: userId }, { toUserId: userId }],
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      return requests.map(formatBuddyRequest);
-    },
-
-    incomingBuddyRequests: async (_, __, context) => {
-      const userId = ensureAuthenticated(context);
-      const requests = await prisma.buddyRequest.findMany({
-        where: { toUserId: userId },
-        orderBy: { createdAt: "desc" },
-      });
-      return requests.map(formatBuddyRequest);
-    },
-
-    outgoingBuddyRequests: async (_, __, context) => {
-      const userId = ensureAuthenticated(context);
-      const requests = await prisma.buddyRequest.findMany({
-        where: { fromUserId: userId },
-        orderBy: { createdAt: "desc" },
-      });
-      return requests.map(formatBuddyRequest);
+      const effectiveMin = minScore ?? 50;
+      const filtered = ranked.filter((c) => c.score >= effectiveMin);
+      return limit ? filtered.slice(0, limit) : filtered;
     },
 
     acceptedBuddyIds: async (_, __, context) => {
@@ -257,7 +247,8 @@ const resolvers = {
         include: { availabilities: true },
       });
 
-      await publishTopMatchesForUser(userId);
+      invalidateMatchCache(userId);
+      publishTopMatchesForUser(userId).catch(() => {});
       return saved;
     },
 
@@ -267,7 +258,8 @@ const resolvers = {
       { publishTopMatchesForUser }
     ) => {
       const saved = await saveAvailability(userId, slots);
-      await publishTopMatchesForUser(userId);
+      invalidateMatchCache(userId);
+      publishTopMatchesForUser(userId).catch(() => {});
       return saved;
     },
 
@@ -286,8 +278,4 @@ const resolvers = {
   },
 };
 
-module.exports = {
-  resolvers,
-  getProfile,
-  saveAvailability,
-};
+export { resolvers, getProfile, saveAvailability };

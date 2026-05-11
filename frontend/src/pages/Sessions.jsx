@@ -17,10 +17,10 @@ import {
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
 import {
-  GET_ACCEPTED_BUDDY_IDS,
   GET_MY_JOIN_REQUESTS,
   GET_MY_SESSION_INVITES,
   GET_MY_SESSIONS,
+  GET_RECOMMENDED_BUDDIES,
   GET_SESSION_JOIN_REQUESTS,
   GET_UPCOMING_SESSIONS,
 } from '../lib/graphql/queries'
@@ -96,6 +96,7 @@ const SessionsPage = () => {
   const [showRequestsModal, setShowRequestsModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [selectedSession, setSelectedSession] = useState(null)
+  const [invitedIds, setInvitedIds] = useState(new Set())
 
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
@@ -136,10 +137,11 @@ const SessionsPage = () => {
   })
 
   const {
-    data: acceptedBuddyIdsData,
+    data: recommendedBuddiesData,
     loading: buddyIdsLoading,
-  } = useQuery(GET_ACCEPTED_BUDDY_IDS, {
+  } = useQuery(GET_RECOMMENDED_BUDDIES, {
     skip: !user?.id,
+    variables: { userId: user?.id, minScore: 50, limit: 100 },
     errorPolicy: 'all',
   })
 
@@ -192,7 +194,7 @@ const SessionsPage = () => {
   const mySessions = mySessionsData?.getMySessions || []
   const myInvites = myInvitesData?.getMySessionInvites || []
   const myJoinRequests = myRequestsData?.getMyJoinRequests || []
-  const acceptedBuddyIds = acceptedBuddyIdsData?.acceptedBuddyIds || []
+  const matchedBuddies = recommendedBuddiesData?.recommendedBuddies || []
 
   const joinRequestsBySession = useMemo(() => {
     const map = new Map()
@@ -252,6 +254,7 @@ const SessionsPage = () => {
 
   const openInviteModal = (session) => {
     setSelectedSession(session)
+    setInvitedIds(new Set())
     setShowInviteModal(true)
   }
 
@@ -280,6 +283,7 @@ const SessionsPage = () => {
       await inviteToSession({
         variables: { sessionId: selectedSession.id, userId: buddyId },
       })
+      setInvitedIds((prev) => new Set([...prev, buddyId]))
     } catch (error) {
       setActionError(error.message || 'Failed to invite buddy')
     }
@@ -762,7 +766,7 @@ const SessionsPage = () => {
                 className="text-lg font-bold text-white"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                Invite Study Buddies
+                Invite Matching Buddies
               </h3>
               <button
                 type="button"
@@ -774,39 +778,58 @@ const SessionsPage = () => {
             </div>
 
             <div className="p-5 max-h-[60vh] overflow-y-auto">
-              {acceptedBuddyIds.length === 0 ? (
+              {matchedBuddies.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-10 h-10 text-[#5A5A5A] mx-auto mb-3 opacity-40" />
                   <p className="text-sm text-[#5A5A5A]">
-                    No accepted buddies yet
+                    No matching buddies found
+                  </p>
+                  <p className="text-xs text-[#5A5A5A] mt-1">
+                    Only users with a 50%+ match score can be invited
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {acceptedBuddyIds.map((buddyId) => (
+                  {matchedBuddies.map((buddy) => (
                     <div
-                      key={buddyId}
+                      key={buddy.userId}
                       className="flex items-center justify-between p-3.5 bg-white rounded-xl shadow-sm"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C76B4F] to-[#E76F51] flex items-center justify-center text-white font-bold text-sm">
-                          {buddyId.charAt(0).toUpperCase()}
+                          {buddy.userId.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-[#2B2B2B]">
-                            Buddy {buddyId.slice(0, 8)}
+                            Match {buddy.userId.slice(0, 8)}
                           </p>
-                          <p className="text-xs text-[#5A5A5A]">
-                            Accepted buddy
-                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xs font-semibold text-[#4CAF50]">
+                              {buddy.score}% match
+                            </span>
+                            {buddy.sharedCourses?.length > 0 && (
+                              <span className="text-xs text-[#5A5A5A]">
+                                · {buddy.sharedCourses.length} shared course{buddy.sharedCourses.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleInvite(buddyId)}
-                        className="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-[#C76B4F] text-white hover:bg-[#B55A3E]"
+                        onClick={() => handleInvite(buddy.userId)}
+                        disabled={invitedIds.has(buddy.userId)}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                          invitedIds.has(buddy.userId)
+                            ? 'bg-[#4CAF50]/10 text-[#4CAF50] border border-[#4CAF50]/30 cursor-default'
+                            : 'bg-[#C76B4F] text-white hover:bg-[#B55A3E]'
+                        }`}
                       >
-                        <UserPlus className="w-3 h-3" /> Invite
+                        {invitedIds.has(buddy.userId) ? (
+                          <><Check className="w-3 h-3" /> Invited</>
+                        ) : (
+                          <><UserPlus className="w-3 h-3" /> Invite</>
+                        )}
                       </button>
                     </div>
                   ))}

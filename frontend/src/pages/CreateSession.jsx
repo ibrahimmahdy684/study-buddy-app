@@ -11,7 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
-import { GET_ACCEPTED_BUDDY_IDS } from '../lib/graphql/queries'
+import { GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { CREATE_SESSION, INVITE_TO_SESSION } from '../lib/graphql/mutations'
 import { Spinner } from '../components'
 
@@ -47,9 +47,10 @@ const CreateSessionPage = () => {
   const [invitedIds, setInvitedIds] = useState(new Set())
 
   const { data: buddyIdsData, loading: buddyIdsLoading } = useQuery(
-    GET_ACCEPTED_BUDDY_IDS,
+    GET_RECOMMENDED_BUDDIES,
     {
       skip: !user?.id,
+      variables: { userId: user?.id, minScore: 50, limit: 100 },
       errorPolicy: 'all',
     }
   )
@@ -59,7 +60,7 @@ const CreateSessionPage = () => {
   )
   const [inviteToSession] = useMutation(INVITE_TO_SESSION)
 
-  const acceptedBuddyIds = buddyIdsData?.acceptedBuddyIds || []
+  const matchedBuddies = buddyIdsData?.recommendedBuddies || []
 
   const isLoading = userLoading || buddyIdsLoading
 
@@ -364,47 +365,49 @@ const CreateSessionPage = () => {
                 </h2>
               </div>
 
-              {acceptedBuddyIds.length === 0 ? (
+              {matchedBuddies.length === 0 ? (
                 <div className="text-center py-10 bg-[#F4E3C8]/30 rounded-xl border border-dashed border-[#C76B4F]/20">
                   <Users className="w-10 h-10 text-[#5A5A5A] mx-auto mb-3 opacity-40" />
                   <p className="text-sm text-[#5A5A5A] mb-1">
-                    No accepted buddies yet
+                    No matching buddies found
                   </p>
                   <p className="text-xs text-[#5A5A5A]">
-                    Accept buddy requests first, then you can invite them
+                    Only users with a 50%+ match score can be invited
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {acceptedBuddyIds.map((buddyId) => {
-                    const invited = invitedIds.has(buddyId)
+                  {matchedBuddies.map((buddy) => {
+                    const invited = invitedIds.has(buddy.userId)
                     return (
                       <div
-                        key={buddyId}
+                        key={buddy.userId}
                         className="flex items-center gap-3 p-3.5 bg-[#F4E3C8]/30 rounded-xl border border-gray-100 hover:border-[#C76B4F]/20 transition-colors"
                       >
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C76B4F] to-[#E76F51] flex items-center justify-center text-white font-bold text-sm shrink-0">
-                          {buddyId.charAt(0).toUpperCase()}
+                          {buddy.userId.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-[#2B2B2B] truncate">
-                            Buddy {buddyId.slice(0, 8)}
+                            Match {buddy.userId.slice(0, 8)}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-[#5A5A5A]">
-                              Accepted buddy
+                            <span className="text-xs font-semibold text-[#4CAF50]">
+                              {buddy.score}% match
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <BookOpen className="w-3 h-3 text-[#5A5A5A]" />
-                            <span className="text-[11px] text-[#5A5A5A] truncate">
-                              Invite to collaborate
-                            </span>
-                          </div>
+                          {buddy.sharedCourses?.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <BookOpen className="w-3 h-3 text-[#5A5A5A]" />
+                              <span className="text-[11px] text-[#5A5A5A] truncate">
+                                {buddy.sharedCourses.join(', ')}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleInvite(buddyId)}
+                          onClick={() => handleInvite(buddy.userId)}
                           disabled={invited}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 flex items-center gap-1.5 ${
                             invited

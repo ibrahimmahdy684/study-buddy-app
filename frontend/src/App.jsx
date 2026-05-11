@@ -1,19 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
-import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import StudyPreferences from './pages/StudyPreferences'
-import { Dashboard } from './pages/Dashboard'
-import ProfileSetup from './pages/ProfileSetup'
-import Profile from './pages/Profile'
-import Notifications from './pages/Notifications'
-import Messages from './pages/Messages'
-import Chat from './pages/Chat'
-import Matching from './pages/Matching'
-import Sessions from './pages/Sessions'
-import MatchDetails from './pages/MatchDetails'
-import CreateSession from './pages/CreateSession'
-import { DashboardShell } from './components'
+import { DashboardShell, Spinner } from './components'
+
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const SignIn = lazy(() => import('./pages/SignIn'))
+const SignUp = lazy(() => import('./pages/SignUp'))
+const StudyPreferences = lazy(() => import('./pages/StudyPreferences'))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
+const ProfileSetup = lazy(() => import('./pages/ProfileSetup'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const Messages = lazy(() => import('./pages/Messages'))
+const Chat = lazy(() => import('./pages/Chat'))
+const Matching = lazy(() => import('./pages/Matching'))
+const Sessions = lazy(() => import('./pages/Sessions'))
+const MatchDetails = lazy(() => import('./pages/MatchDetails'))
+const CreateSession = lazy(() => import('./pages/CreateSession'))
 
 function App() {
   return (
@@ -23,29 +25,31 @@ function App() {
         v7_relativeSplatPath: true,
       }}
     >
-      <Routes>
-        {/* Public / standalone routes (no sidebar) */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<SignIn />} />
-        <Route path="/register" element={<SignUp />} />
-        <Route path="/study-preferences" element={<StudyPreferences />} />
+      <Suspense fallback={<div className="flex justify-center items-center h-screen"><Spinner size="lg" /></div>}>
+        <Routes>
+          {/* Public / standalone routes (no sidebar) */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<SignIn />} />
+          <Route path="/register" element={<SignUp />} />
+          <Route path="/study-preferences" element={<StudyPreferences />} />
 
-        {/* Authenticated app shell (Navbar + Sidebar wrap every child) */}
-        <Route element={<DashboardShell />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile-setup" element={<ProfileSetup />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/matching" element={<Matching />} />
-          <Route path="/matching/:buddyId" element={<MatchDetails />} />
-          <Route path="/sessions" element={<Sessions />} />
-          <Route path="/sessions/create" element={<CreateSession />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/messages/:conversationId" element={<Chat />} />
-        </Route>
+          {/* Authenticated app shell (Navbar + Sidebar wrap every child) */}
+          <Route element={<DashboardShell />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile-setup" element={<ProfileSetup />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/matching" element={<Matching />} />
+            <Route path="/matching/:buddyId" element={<MatchDetails />} />
+            <Route path="/sessions" element={<Sessions />} />
+            <Route path="/sessions/create" element={<CreateSession />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:conversationId" element={<Chat />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

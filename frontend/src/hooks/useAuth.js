@@ -13,9 +13,11 @@ export const useAuth = () => {
   const logout = useCallback(async () => {
     try {
       const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      await fetch(`${apiBase}/logout`, {
+      await fetch(`${apiBase}/graphql`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'mutation Logout { logout { success } }' }),
       })
     } catch (error) {
       // Keep client state consistent even if logout request fails.
