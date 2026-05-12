@@ -51,6 +51,7 @@ export const typeDefs = gql`
   type Query {
     health: String!
     me: User!
+    user(userId: String!): User
   }
 
   type Mutation {

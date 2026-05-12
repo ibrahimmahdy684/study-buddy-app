@@ -14,6 +14,7 @@ import { startConsumer, publishMatchesForUser } from "./consumer.js";
 
 const matchThreshold = Number(process.env.MATCH_EVENT_THRESHOLD || 50);
 const matchLimit = Number(process.env.MATCH_EVENT_LIMIT || 1000);
+const PORT = process.env.PORT || 4004;
 
 const {
   publishMatchIdentified,
@@ -29,7 +30,7 @@ const run = async () => {
   const consumer = await startConsumer({ matchThreshold, limit: matchLimit });
 
   const { url } = await startStandaloneServer(server, {
-    listen: { port: parseInt(process.env.PORT, 10) || 4004 },
+    listen: { port: Number(PORT) },
     context: async ({ req }) => {
       const cookieHeader = req?.headers?.cookie || "";
       const cookies = parse(cookieHeader);

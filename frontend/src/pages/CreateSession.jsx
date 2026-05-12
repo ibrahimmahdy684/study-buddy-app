@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import { GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { CREATE_SESSION, INVITE_TO_SESSION } from '../lib/graphql/mutations'
 import { Spinner } from '../components'
@@ -61,6 +62,7 @@ const CreateSessionPage = () => {
   const [inviteToSession] = useMutation(INVITE_TO_SESSION)
 
   const matchedBuddies = buddyIdsData?.recommendedBuddies || []
+  const matchedBuddyNames = useUserNames(matchedBuddies.map((buddy) => buddy.userId))
 
   const isLoading = userLoading || buddyIdsLoading
 
@@ -385,11 +387,11 @@ const CreateSessionPage = () => {
                         className="flex items-center gap-3 p-3.5 bg-[#F4E3C8]/30 rounded-xl border border-gray-100 hover:border-[#C76B4F]/20 transition-colors"
                       >
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C76B4F] to-[#E76F51] flex items-center justify-center text-white font-bold text-sm shrink-0">
-                          {buddy.userId.charAt(0).toUpperCase()}
+                          {(buddy.name || matchedBuddyNames[buddy.userId] || 'Buddy').charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-[#2B2B2B] truncate">
-                            Match {buddy.userId.slice(0, 8)}
+                            {buddy.name || matchedBuddyNames[buddy.userId] || 'Study buddy'}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs font-semibold text-[#4CAF50]">

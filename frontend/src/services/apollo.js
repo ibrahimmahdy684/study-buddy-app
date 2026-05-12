@@ -9,7 +9,9 @@ import { getMainDefinition } from '@apollo/client/utilities'
 import { createClient } from 'graphql-ws'
 
 const graphqlEndpoint =
-  import.meta.env.VITE_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql'
+  import.meta.env.VITE_GRAPHQL_ENDPOINT ||
+  import.meta.env.REACT_APP_GATEWAY_URL ||
+  'http://localhost:4000/graphql'
 
 // Subscriptions go directly to messaging-service over WebSocket. The gateway
 // only proxies HTTP today, so we connect to the messaging service directly

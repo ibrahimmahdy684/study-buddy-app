@@ -2,6 +2,9 @@ import { GraphQLError } from "graphql";
 import prisma from "./db.js";
 import { rankCandidates } from "./scoring.js";
 
+const USER_SERVICE_URL =
+  process.env.USER_SERVICE_URL || "http://user-service:4001/graphql";
+
 const matchCache = new Map();
 const MATCH_CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -25,6 +28,42 @@ function invalidateMatchCache(userId) {
 
 function clearAllMatchCaches() {
   matchCache.clear();
+}
+
+async function fetchUserNames(userIds) {
+  const uniqueUserIds = [...new Set((userIds || []).map((userId) => String(userId).trim()).filter(Boolean))];
+  if (uniqueUserIds.length === 0) return new Map();
+
+  const results = await Promise.all(
+    uniqueUserIds.map(async (userId) => {
+      try {
+        const response = await fetch(USER_SERVICE_URL, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: `query GetBuddyName($userId: String!) { user(userId: $userId) { id name } }`,
+            variables: { userId },
+          }),
+        });
+
+        const payload = await response.json();
+        const name = payload?.data?.user?.name;
+        return [userId, typeof name === "string" && name.trim() ? name.trim() : null];
+      } catch {
+        return [userId, null];
+      }
+    })
+  );
+
+  return new Map(results);
+}
+
+async function hydrateCandidateNames(candidates) {
+  const namesById = await fetchUserNames(candidates.map((candidate) => candidate.userId));
+  return candidates.map((candidate) => ({
+    ...candidate,
+    name: namesById.get(candidate.userId) || null,
+  }));
 }
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
@@ -199,13 +238,14 @@ const resolvers = {
         const allProfiles = await prisma.matchProfile.findMany({
           include: { availabilities: true },
         });
-        ranked = rankCandidates(source, allProfiles, null, 0);
+        ranked = rankCandidates(source, allProfiles, undefined, 0);
         setCachedMatches(userId, ranked);
       }
 
       const effectiveMin = minScore ?? 50;
       const filtered = ranked.filter((c) => c.score >= effectiveMin);
-      return limit ? filtered.slice(0, limit) : filtered;
+      const limited = limit ? filtered.slice(0, limit) : filtered;
+      return hydrateCandidateNames(limited);
     },
 
     acceptedBuddyIds: async (_, __, context) => {

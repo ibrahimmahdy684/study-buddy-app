@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import {
   GET_MY_JOIN_REQUESTS,
   GET_MY_SESSION_INVITES,
@@ -154,6 +155,10 @@ const SessionsPage = () => {
     errorPolicy: 'all',
   })
 
+  const joinRequesters = useUserNames(
+    joinRequestsData?.getSessionJoinRequests?.map((request) => request.requesterId) || []
+  )
+
   const refetchSessions = [{ query: GET_MY_SESSIONS }]
 
   const [inviteToSession] = useMutation(INVITE_TO_SESSION, {
@@ -195,6 +200,25 @@ const SessionsPage = () => {
   const myInvites = myInvitesData?.getMySessionInvites || []
   const myJoinRequests = myRequestsData?.getMyJoinRequests || []
   const matchedBuddies = recommendedBuddiesData?.recommendedBuddies || []
+  const matchedBuddyNames = useUserNames(matchedBuddies.map((buddy) => buddy.userId))
+  const matchedBuddyById = useMemo(
+    () => new Map(matchedBuddies.map((buddy) => [buddy.userId, buddy])),
+    [matchedBuddies]
+  )
+
+  const allParticipantIds = useMemo(() => {
+    const ids = []
+    for (const session of mySessions) {
+      if (Array.isArray(session.participants)) {
+        session.participants.forEach((p) => {
+          if (p.userId && p.userId !== user?.id) ids.push(p.userId)
+        })
+      }
+    }
+    return [...new Set(ids)]
+  }, [mySessions, user?.id])
+
+  const participantNames = useUserNames(allParticipantIds)
 
   const joinRequestsBySession = useMemo(() => {
     const map = new Map()
@@ -210,6 +234,7 @@ const SessionsPage = () => {
     const upcoming = []
     const past = []
     for (const session of mySessions) {
+      if (session.status === 'CANCELLED') continue
       const date = parseDate(session.date)
       if (!date) continue
       if (date.getTime() >= nowMs) {
@@ -235,14 +260,16 @@ const SessionsPage = () => {
     const upcoming = upcomingData?.getUpcomingSessions || []
     const mySessionIds = new Set(mySessions.map((session) => session.id))
     return upcoming
+      .filter((session) => session.status !== 'CANCELLED')
       .filter((session) => session.creatorId !== user?.id)
+      .filter((session) => matchedBuddyById.has(session.creatorId))
       .filter((session) => !mySessionIds.has(session.id))
       .sort((a, b) => {
         const aMs = parseDate(a.date)?.getTime() || 0
         const bMs = parseDate(b.date)?.getTime() || 0
         return aMs - bMs
       })
-  }, [upcomingData, mySessions, user?.id])
+  }, [upcomingData, mySessions, user?.id, matchedBuddyById])
 
   const isLoading =
     userLoading ||
@@ -320,6 +347,9 @@ const SessionsPage = () => {
     try {
       setActionError('')
       await respondToJoinRequest({ variables: { requestId, approve } })
+      if (approve) {
+        setShowRequestsModal(false)
+      }
     } catch (error) {
       setActionError(error.message || 'Failed to update request')
     }
@@ -393,7 +423,9 @@ const SessionsPage = () => {
     const isOnline = session.type === 'ONLINE' || session.type === 'online'
     const participantCount = getParticipantCount(session)
     const isHost = session.creatorId === user?.id
+    const isParticipant = Array.isArray(session.participants) && session.participants.some((p) => p.userId === user?.id)
     const joinRequest = joinRequestsBySession.get(session.id)
+    const creatorBuddy = matchedBuddyById.get(session.creatorId)
 
     return (
       <div className="p-5 bg-[#F4E3C8]/60 rounded-xl border border-[#C76B4F]/10 hover:border-[#C76B4F]/25 transition-all">
@@ -406,7 +438,7 @@ const SessionsPage = () => {
               <p className="text-xs text-[#5A5A5A] mt-0.5 flex items-center gap-1">
                 <span>by</span>
                 <span className="font-medium text-[#C76B4F]">
-                  Buddy {session.creatorId?.slice(0, 8) || 'Unknown'}
+                  {creatorBuddy?.name || matchedBuddyNames[session.creatorId] || 'Study buddy'}
                 </span>
               </p>
             )}
@@ -438,11 +470,26 @@ const SessionsPage = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-sm text-[#5A5A5A]">
-            <Users className="w-3.5 h-3.5" />
-            {participantCount} participant{participantCount !== 1 ? 's' : ''}
-          </span>
+        <div className="flex flex-col gap-3">
+          {(isHost || isParticipant) && Array.isArray(session.participants) && session.participants.length > 0 && (
+            <div className="p-3 bg-white/60 rounded-lg">
+              <p className="text-xs font-semibold text-[#2B2B2B] mb-2">Participants</p>
+              <div className="flex flex-wrap gap-2">
+                {session.participants.map((participant) => (
+                  <span key={participant.id} className="px-2.5 py-1 bg-[#C76B4F]/10 text-[#C76B4F] rounded-full text-xs font-medium">
+                    {participant.userId === session.creatorId
+                      ? `${participantNames[participant.userId] || 'Study buddy'} (Host)`
+                      : participantNames[participant.userId] || 'Study buddy'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-sm text-[#5A5A5A]">
+              <Users className="w-3.5 h-3.5" />
+              {participantCount} participant{participantCount !== 1 ? 's' : ''}
+            </span>
           <div className="flex gap-2 flex-wrap justify-end">
             {mode === 'mine' && isHost && (
               <>
@@ -512,6 +559,7 @@ const SessionsPage = () => {
                 )}
               </>
             )}
+          </div>
           </div>
         </div>
       </div>
@@ -797,11 +845,11 @@ const SessionsPage = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C76B4F] to-[#E76F51] flex items-center justify-center text-white font-bold text-sm">
-                          {buddy.userId.charAt(0).toUpperCase()}
+                          {(buddy.name || matchedBuddyNames[buddy.userId] || 'Buddy').charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-[#2B2B2B]">
-                            Match {buddy.userId.slice(0, 8)}
+                            {buddy.name || matchedBuddyNames[buddy.userId] || 'Study buddy'}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-xs font-semibold text-[#4CAF50]">
@@ -888,7 +936,7 @@ const SessionsPage = () => {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#2B2B2B]">
-                          Buddy {request.requesterId.slice(0, 8)}
+                          {joinRequesters[request.requesterId] || 'Study buddy'}
                         </p>
                         <p className="text-xs text-[#5A5A5A]">
                           Requested {new Date(request.createdAt).toLocaleDateString()}

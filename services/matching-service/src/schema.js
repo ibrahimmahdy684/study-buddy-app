@@ -28,6 +28,7 @@ const typeDefs = `#graphql
 
   type MatchCandidate {
     userId: String!
+    name: String
     score: Int!
     reasons: [String!]!
     sharedCourses: [String!]!

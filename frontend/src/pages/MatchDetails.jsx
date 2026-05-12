@@ -10,6 +10,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import { GET_PROFILE, GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { GET_OR_CREATE_CONVERSATION } from '../lib/graphql/mutations'
 import { Card, Spinner } from '../components'
@@ -56,6 +57,8 @@ const MatchDetails = () => {
   )
   const buddyProfile = buddyProfileData?.profile
   const myProfile = myProfileData?.profile
+  const buddyNames = useUserNames(buddyId ? [buddyId] : [])
+  const displayName = match?.name || buddyNames[buddyId] || 'Study buddy'
 
   const sharedCourses = useMemo(() => {
     const myCourses = myProfile?.courses || []
@@ -154,14 +157,14 @@ const MatchDetails = () => {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-6">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-[#C76B4F] text-4xl font-bold">
-                {(buddyProfile.userId || buddyId).charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
               <div>
                 <h1
                   className="text-3xl font-bold mb-2"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
-                  Buddy {buddyId.slice(0, 8)}
+                  {displayName}
                 </h1>
                 <p className="text-white/90 text-lg">{buddyProfile.studyMode || 'Study buddy'}</p>
                 {buddyProfile.studyPace && (

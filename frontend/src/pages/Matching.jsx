@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@apollo/client'
 import { BookOpen, Search, Star, Users } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import { GET_RECOMMENDED_BUDDIES } from '../lib/graphql/queries'
 import { GET_OR_CREATE_CONVERSATION } from '../lib/graphql/mutations'
 import { Card, Spinner } from '../components'
@@ -27,6 +28,7 @@ const MatchingPage = () => {
 	)
 
 	const recommendedBuddies = data?.recommendedBuddies || []
+	const buddyNames = useUserNames(recommendedBuddies.map((buddy) => buddy.userId))
 	const isLoading = userLoading || matchesLoading
 
 	const filteredBuddies = useMemo(() => {
@@ -145,11 +147,11 @@ const MatchingPage = () => {
 							<div className="flex items-start justify-between mb-4">
 								<div className="flex items-center gap-4">
 									<div className="w-16 h-16 bg-gradient-to-br from-[#C76B4F] to-[#E76F51] rounded-full flex items-center justify-center text-white text-2xl font-bold">
-										{buddy.userId.charAt(0).toUpperCase()}
+										{(buddy.name || buddyNames[buddy.userId] || 'Buddy').charAt(0).toUpperCase()}
 									</div>
 									<div>
 										<h3 className="text-xl font-semibold text-[#2B2B2B]">
-											Buddy {buddy.userId.slice(0, 8)}
+											{buddy.name || buddyNames[buddy.userId] || 'Study buddy'}
 										</h3>
 										<p className="text-[#5A5A5A] text-sm">
 											{buddy.sharedCourses.length} shared course

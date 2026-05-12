@@ -1,10 +1,7 @@
-import { Kafka } from 'kafkajs';
+import { createKafkaClient } from '../createKafkaClient.js';
 import { randomUUID } from 'crypto';
 
-const kafka = new Kafka({
-  clientId: 'availability-service',
-  brokers:  [process.env.KAFKA_BROKER || 'localhost:9092'],
-});
+const kafka = createKafkaClient('availability-service');
 
 const producer = kafka.producer();
 let isConnected = false;

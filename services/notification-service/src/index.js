@@ -6,6 +6,8 @@ import resolvers from "./resolvers.js";
 import prisma from "./db.js";
 import { createNotificationConsumer, subscribeToEvents } from "./kafka.js";
 
+const PORT = process.env.PORT || 4006;
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
@@ -124,7 +126,7 @@ const run = async () => {
   }
 
   const { url } = await startStandaloneServer(server, {
-    listen: { port: parseInt(process.env.PORT, 10) || 4003 },
+    listen: { port: Number(PORT) },
   });
 
   console.log(`🚀 Notification Service ready at ${url}`);

@@ -10,6 +10,8 @@ const {
   createUserCreatedConsumer,
 } = require("./kafka");
 
+const PORT = process.env.PORT || 4002;
+
 const resolversWithScalars = {
   ...resolversMap,
   Profile: {
@@ -62,7 +64,7 @@ const run = async () => {
   }
 
   const { url } = await startStandaloneServer(server, {
-    listen: { port: parseInt(process.env.PORT, 10) || 4002 },
+    listen: { port: Number(PORT) },
     context: async () => ({
       publishUserPreferencesUpdated,
     }),

@@ -1,19 +1,11 @@
-import { Kafka } from "kafkajs";
+import { createKafkaClient } from "./createKafkaClient.js";
 import { randomUUID } from "crypto";
 
 const TOPIC_STUDY_SESSION_CREATED = "StudySessionCreated";
 const TOPIC_STUDY_SESSION_JOINED = "StudySessionJoined";
 const TOPIC_STUDY_SESSION_CANCELLED = "StudySessionCancelled";
 
-const kafkaConfig = {
-  clientId: process.env.KAFKA_CLIENT_ID || "session-service",
-  brokers: (process.env.KAFKA_BROKER || "localhost:9092")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
-};
-
-const kafka = new Kafka(kafkaConfig);
+const kafka = createKafkaClient(process.env.KAFKA_CLIENT_ID || "session-service");
 
 function createKafkaPublisher() {
   if (process.env.SKIP_KAFKA === "true") {

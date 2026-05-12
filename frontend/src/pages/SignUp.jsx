@@ -5,7 +5,13 @@ import { BookOpen, Plus, X } from 'lucide-react'
 import { ImageWithFallback } from '../components/figma/ImageWithFallback'
 import registerImage from '../assets/landing/benefits-campus.jpg'
 import { isValidEmail, isValidPassword, getErrorMessage } from '../utils/helpers'
-import { GET_ME } from '../hooks/useSession'
+import { ACADEMIC_YEAR_LABELS } from '../lib/constants'
+import {
+  SET_COURSES,
+  SET_HELP_TOPICS,
+  UPDATE_ME,
+  UPDATE_PROFILE,
+} from '../lib/graphql/mutations'
 
 const REGISTER_MUTATION = gql`
   mutation Register($input: RegisterInput!) {
@@ -41,15 +47,11 @@ export default function SignUp() {
   const [serverError, setServerError] = useState(null)
 
   const client = useApolloClient()
-  const [register, { loading }] = useMutation(REGISTER_MUTATION, {
-    onCompleted: async () => {
-      await client.resetStore()
-      navigate('/study-preferences', { replace: true })
-    },
-    onError: (error) => {
-      setServerError(getErrorMessage(error))
-    }
-  })
+  const [register, { loading }] = useMutation(REGISTER_MUTATION)
+  const [updateMe] = useMutation(UPDATE_ME)
+  const [updateProfile] = useMutation(UPDATE_PROFILE)
+  const [setCourses] = useMutation(SET_COURSES)
+  const [setHelpTopics] = useMutation(SET_HELP_TOPICS)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -141,7 +143,14 @@ export default function SignUp() {
     }
 
     try {
-      await register({
+      const academicYear = formData.academicYear ? Number(formData.academicYear) : undefined
+      const courseInputs = formData.courses
+        .map((course) => course.trim())
+        .filter(Boolean)
+        .map((name) => ({ name }))
+      const topics = formData.studyTopics.map((topic) => topic.trim()).filter(Boolean)
+
+      const result = await register({
         variables: {
           input: {
             name: formData.name,
@@ -150,8 +159,51 @@ export default function SignUp() {
           }
         }
       })
+
+      const userId = result?.data?.register?.user?.id
+
+      if (userId) {
+        await Promise.all([
+          updateMe({
+            variables: {
+              input: {
+                name: formData.name.trim() || undefined,
+                university: formData.university.trim() || undefined,
+                academicYear,
+              },
+            },
+          }),
+          formData.bio.trim()
+            ? updateProfile({
+                variables: {
+                  userId,
+                  bio: formData.bio.trim(),
+                },
+              })
+            : Promise.resolve(),
+          courseInputs.length > 0
+            ? setCourses({
+                variables: {
+                  userId,
+                  courses: courseInputs,
+                },
+              })
+            : Promise.resolve(),
+          topics.length > 0
+            ? setHelpTopics({
+                variables: {
+                  userId,
+                  topics,
+                },
+              })
+            : Promise.resolve(),
+        ])
+      }
+
+      await client.resetStore()
+      navigate('/study-preferences', { replace: true })
     } catch (err) {
-      // Error handled by onError callback
+      setServerError(getErrorMessage(err))
     }
   }
 
@@ -309,11 +361,9 @@ export default function SignUp() {
                     disabled={loading}
                   >
                     <option value="">Select year</option>
-                    <option value="Freshman">Freshman</option>
-                    <option value="Sophomore">Sophomore</option>
-                    <option value="Junior">Junior</option>
-                    <option value="Senior">Senior</option>
-                    <option value="Graduate">Graduate</option>
+                    {Object.entries(ACADEMIC_YEAR_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
                 </div>
               </div>

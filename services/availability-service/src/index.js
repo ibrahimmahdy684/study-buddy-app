@@ -9,6 +9,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });
 
+const PORT = process.env.PORT || 4003;
+
 const shutdown = async () => {
   console.log('\n🛑 Shutting down availability service...');
   await disconnectProducer();
@@ -29,7 +31,7 @@ const start = async () => {
 
   const server = new ApolloServer({ typeDefs, resolvers });
   const { url } = await startStandaloneServer(server, {
-    listen: { port: Number(process.env.PORT) || 4002 },
+    listen: { port: Number(PORT) },
   });
 
   console.log(`🚀 Availability service ready at ${url}`);

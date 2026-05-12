@@ -397,6 +397,7 @@ export const resolvers = {
 
       const buddyAllowed =
         (await areBuddies(userId, session.creatorId)) ||
+        (await hasMinMatchScore(userId, session.creatorId, 50)) ||
         canJoinCreatorSession(userId, session.creatorId);
 
       if (!buddyAllowed) {
@@ -659,7 +660,7 @@ export const resolvers = {
       }
 
       const isMatchedBuddy =
-        (await hasMinMatchScore(userId, invitedUserId)) ||
+        (await hasMinMatchScore(userId, invitedUserId, 50)) ||
         canJoinCreatorSession(invitedUserId, userId);
 
       if (!isMatchedBuddy) {
@@ -829,7 +830,7 @@ export const resolvers = {
       }
 
       const buddyAllowed =
-        (await areBuddies(userId, session.creatorId)) ||
+        (await hasMinMatchScore(userId, session.creatorId, 50)) ||
         canJoinCreatorSession(userId, session.creatorId);
 
       if (!buddyAllowed) {

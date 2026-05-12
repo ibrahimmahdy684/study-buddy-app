@@ -69,6 +69,17 @@ export const resolvers = {
         throwServiceError(error);
       }
     },
+
+    user: async (_, { userId }) => {
+      try {
+        return await getUserById(userId);
+      } catch (error) {
+        if (error.statusCode === 404) {
+          return null;
+        }
+        throwServiceError(error);
+      }
+    },
   },
 
   Mutation: {
