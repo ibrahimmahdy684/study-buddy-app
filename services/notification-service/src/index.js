@@ -79,19 +79,20 @@ const handleNotificationEvent = async (topic, event) => {
         );
         break;
 
-      case "MatchFound":
-        // Notify user about a new match
+      case "MatchFound": {
+        const candidate = payload.candidate || {};
         await prisma.notification.create({
           data: {
             userId: payload.userId,
             type: "match_found",
             title: "New Study Buddy Match",
-            message: `You have a new study buddy match: ${payload.matchName}. Compatibility: ${payload.compatibilityScore}%`,
-            relatedId: payload.matchId,
+            message: `You have a new study buddy match! Compatibility score: ${candidate.score ?? 0}%`,
+            relatedId: candidate.userId || null,
           },
         });
         console.log(`Match notification for user ${payload.userId}`);
         break;
+      }
 
       case "MessageSent":
         await prisma.notification.create({

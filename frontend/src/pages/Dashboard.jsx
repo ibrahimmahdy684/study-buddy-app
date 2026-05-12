@@ -106,7 +106,7 @@ export function Dashboard() {
               </p>
             </div>
             <button
-              onClick={() => navigate('/profile-setup')}
+              onClick={() => navigate('/profile-setup?edit=true')}
               className="px-4 py-1.5 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors text-sm whitespace-nowrap"
             >
               Complete Profile

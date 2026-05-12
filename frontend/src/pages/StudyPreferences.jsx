@@ -213,13 +213,31 @@ export default function StudyPreferences() {
     if (!user?.id || isAnyActionLoading) return;
     setLocalError(null);
 
+    const daySlots = (slotsByDate[dateKey] || []).slice().sort((a, b) => a.endTime.localeCompare(b.endTime));
+
+    let startTime = '09:00';
+    let endTime = '10:00';
+
+    if (daySlots.length > 0) {
+      const lastEnd = daySlots[daySlots.length - 1].endTime;
+      const [h, m] = lastEnd.split(':').map(Number);
+      const startMins = h * 60 + m;
+      const endMins = startMins + 60;
+      if (endMins > 23 * 60) {
+        setLocalError('No more time available to add on this day');
+        return;
+      }
+      startTime = `${String(Math.floor(startMins / 60)).padStart(2, '0')}:${String(startMins % 60).padStart(2, '0')}`;
+      endTime = `${String(Math.floor(endMins / 60)).padStart(2, '0')}:${String(endMins % 60).padStart(2, '0')}`;
+    }
+
     try {
       await addSlot({
         variables: {
           userId: user.id,
           date: dateKey,
-          startTime: '09:00',
-          endTime: '17:00',
+          startTime,
+          endTime,
           isRecurring: false
         }
       });

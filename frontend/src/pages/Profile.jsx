@@ -55,10 +55,10 @@ const ProfilePage = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="px-5 py-2 bg-[#E76F51] text-white rounded-lg hover:bg-[#D65F41] transition-colors font-medium whitespace-nowrap ml-4"
                 >
-                  Set Up Profile
+                  Complete Profile
                 </button>
               </div>
             )}
@@ -89,7 +89,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="px-4 py-2 bg-white text-[#C76B4F] rounded-lg hover:bg-white/90 transition-colors flex items-center gap-2 self-start"
                 >
                   <Edit className="w-4 h-4" />
@@ -161,7 +161,7 @@ const ProfilePage = () => {
                   Account Details
                 </h2>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="text-[#C76B4F] hover:underline text-sm"
                 >
                   Edit
@@ -211,7 +211,7 @@ const ProfilePage = () => {
                   My Courses
                 </h2>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="text-[#C76B4F] hover:underline text-sm"
                 >
                   Edit
@@ -248,7 +248,7 @@ const ProfilePage = () => {
                   Topics I Can Help With
                 </h2>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="text-[#C76B4F] hover:underline text-sm"
                 >
                   Edit
@@ -280,7 +280,7 @@ const ProfilePage = () => {
                   Study Preferences
                 </h2>
                 <button
-                  onClick={() => navigate('/profile-setup')}
+                  onClick={() => navigate('/profile-setup?edit=true')}
                   className="text-[#C76B4F] hover:underline text-sm"
                 >
                   Edit

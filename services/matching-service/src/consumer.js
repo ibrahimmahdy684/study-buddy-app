@@ -1,6 +1,6 @@
 import prisma from "./db.js";
 import { rankCandidates } from "./scoring.js";
-import { getProfile, saveAvailability } from "./resolvers.js";
+import { getProfile, saveAvailability, clearAllMatchCaches } from "./resolvers.js";
 import {
   createConsumer,
   createKafkaPublisher,
@@ -142,6 +142,7 @@ async function startConsumer({ matchThreshold = 50, limit = 1000 } = {}) {
 
       if (topic === TOPIC_USER_PREFERENCES_UPDATED) {
         await applyUserPreferencesEvent(payload);
+        clearAllMatchCaches();
         if (payload.userId) {
           await publishMatchesForUser(
             payload.userId,
@@ -159,6 +160,7 @@ async function startConsumer({ matchThreshold = 50, limit = 1000 } = {}) {
 
         const normalized = normalizeAvailabilityFromEvent(slots);
         await saveAvailability(userId, normalized);
+        clearAllMatchCaches();
         await publishMatchesForUser(
           userId,
           publishMatchIdentified,

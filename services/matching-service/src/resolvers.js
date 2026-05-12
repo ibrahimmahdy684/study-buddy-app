@@ -23,6 +23,10 @@ function invalidateMatchCache(userId) {
   matchCache.delete(userId);
 }
 
+function clearAllMatchCaches() {
+  matchCache.clear();
+}
+
 // ─── Normalizers ─────────────────────────────────────────────────────────────
 
 function normalizeStringArray(values) {
@@ -278,4 +282,4 @@ const resolvers = {
   },
 };
 
-export { resolvers, getProfile, saveAvailability };
+export { resolvers, getProfile, saveAvailability, clearAllMatchCaches };
