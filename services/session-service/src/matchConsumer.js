@@ -1,17 +1,9 @@
-import { Kafka } from "kafkajs";
+import { createKafkaClient } from "./createKafkaClient.js";
 import { updateUserMatchedBuddies } from "./matchState.js";
 
 const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
 
-const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-const kafka = new Kafka({
-  clientId: process.env.KAFKA_CLIENT_ID || "session-service",
-  brokers,
-});
+const kafka = createKafkaClient(process.env.KAFKA_CLIENT_ID || "session-service");
 
 export function createMatchConsumer() {
   if (process.env.SKIP_KAFKA_CONSUMER === "true") {

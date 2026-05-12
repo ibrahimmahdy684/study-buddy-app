@@ -10,6 +10,8 @@ const {createKafkaPublisher} = kafkaModule;
 import { createMatchConsumer, startMatchConsumer } from "./matchConsumer.js";
 import prisma from "./db.js";
 
+const PORT = process.env.PORT || 4005;
+
 const extractToken = (req) => {
   const cookieHeader = req?.headers?.cookie || "";
   const cookies = parse(cookieHeader);
@@ -58,7 +60,7 @@ const run = async () => {
   }
 
   const { url } = await startStandaloneServer(server, {
-    listen: { port: parseInt(process.env.PORT || "4005", 10) },
+    listen: { port: Number(PORT) },
     context: async ({ req }) => ({
       authUser: (() => {
         const token = extractToken(req);

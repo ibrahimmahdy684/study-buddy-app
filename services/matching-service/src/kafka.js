@@ -1,4 +1,4 @@
-import { Kafka } from "kafkajs";
+import { createKafkaClient } from "./createKafkaClient.js";
 import { randomUUID } from "crypto";
 
 export const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
@@ -8,15 +8,7 @@ export const TOPIC_MATCH_CANDIDATES_UPDATED = "MatchCandidatesUpdated";
 export const TOPIC_BUDDY_REQUEST_CREATED = "BuddyRequestCreated";
 export const TOPIC_BUDDY_REQUEST_ACCEPTED = "BuddyRequestAccepted";
 
-const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-const kafka = new Kafka({
-  clientId: "matching-service",
-  brokers,
-});
+const kafka = createKafkaClient("matching-service");
 
 export function createKafkaPublisher() {
   if (process.env.SKIP_KAFKA === "true") {

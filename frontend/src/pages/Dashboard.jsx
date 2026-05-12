@@ -61,6 +61,7 @@ export function Dashboard() {
   const unreadNotifications = notifications.filter((n) => !n.read)
   const allSessions = sessionsData?.getMySessions || []
   const upcomingSessions = allSessions
+    .filter((s) => s.status !== 'CANCELLED')
     .filter((s) => {
       const dateStr = s.date
       const dateMs = Number.isFinite(Number(dateStr))

@@ -1,16 +1,13 @@
-const { Kafka } = require("kafkajs");
-const { randomUUID } = require("crypto");
-
+import { randomUUID } from "crypto";
 const TOPIC_USER_PREFERENCES_UPDATED = "UserPreferencesUpdated";
+import { createKafkaClient } from "./createKafkaClient.js";
 
-const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
+const brokers = (process.env.KAFKA_BROKER || "")
   .split(",")
-  .map((s) => s.trim());
+  .map((s) => s.trim())
+  .filter(Boolean);
 
-const kafka = new Kafka({
-  clientId: "profile-service",
-  brokers,
-});
+const kafka = createKafkaClient("profile-service");
 
 function createKafkaPublisher() {
   if (process.env.SKIP_KAFKA === "true") {
@@ -71,8 +68,4 @@ function createUserCreatedConsumer() {
   return kafka.consumer({ groupId: "profile-service-group" });
 }
 
-module.exports = {
-  createKafkaPublisher,
-  createUserCreatedConsumer,
-  TOPIC_USER_PREFERENCES_UPDATED,
-};
+export { createKafkaPublisher, createUserCreatedConsumer, TOPIC_USER_PREFERENCES_UPDATED };

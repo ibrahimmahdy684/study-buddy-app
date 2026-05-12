@@ -209,6 +209,10 @@ async function run() {
   const app = express();
   const httpServer = http.createServer(app);
 
+	app.get("/health", (_req, res) => {
+		res.status(200).send("OK");
+	});
+
   app.use(
     "/graphql",
     cors({

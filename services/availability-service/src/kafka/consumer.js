@@ -1,10 +1,7 @@
-import { Kafka } from 'kafkajs';
+import { createKafkaClient } from '../createKafkaClient.js';
 import prisma from '../db.js';
 
-const kafka = new Kafka({
-  clientId: 'availability-service-consumer',
-  brokers:  [process.env.KAFKA_BROKER || 'localhost:9092'],
-});
+const kafka = createKafkaClient('availability-service-consumer');
 
 let consumer;
 

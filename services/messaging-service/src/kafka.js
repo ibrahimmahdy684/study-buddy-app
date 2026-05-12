@@ -1,15 +1,9 @@
-import { Kafka } from "kafkajs";
+import { createKafkaClient } from "./createKafkaClient.js";
 import { randomUUID } from "crypto";
 
 export const TOPIC_MESSAGE_SENT = "MessageSent";
 
-const kafka = new Kafka({
-	clientId: process.env.KAFKA_CLIENT_ID || "messaging-service",
-	brokers: (process.env.KAFKA_BROKER || "localhost:9092")
-		.split(",")
-		.map((s) => s.trim())
-		.filter(Boolean),
-});
+const kafka = createKafkaClient(process.env.KAFKA_CLIENT_ID || "messaging-service");
 
 export function createKafkaPublisher() {
 	if (process.env.SKIP_KAFKA === "true") {

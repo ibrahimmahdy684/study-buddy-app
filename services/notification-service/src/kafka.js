@@ -1,13 +1,6 @@
-import { Kafka } from "kafkajs";
+import { createKafkaClient } from "./createKafkaClient.js";
 
-const brokers = (process.env.KAFKA_BROKER || "localhost:9092")
-  .split(",")
-  .map((s) => s.trim());
-
-const kafka = new Kafka({
-  clientId: "notification-service",
-  brokers,
-});
+const kafka = createKafkaClient("notification-service");
 
 function createNotificationConsumer() {
   if (process.env.SKIP_KAFKA_CONSUMER === "true") {

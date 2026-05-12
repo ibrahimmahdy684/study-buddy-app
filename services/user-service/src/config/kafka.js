@@ -1,9 +1,12 @@
 import { Kafka } from "kafkajs";
+import { createKafkaClient } from "../createKafkaClient.js";
 
-const kafka = new Kafka({
-  clientId: process.env.KAFKA_CLIENT_ID || "user-service",
-  brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
-});
+const kafkaBrokers = (process.env.KAFKA_BROKER || "")
+  .split(",")
+  .map((broker) => broker.trim())
+  .filter(Boolean);
+
+const kafka = createKafkaClient(process.env.KAFKA_CLIENT_ID || "user-service");
 
 const producer = kafka.producer();
 
