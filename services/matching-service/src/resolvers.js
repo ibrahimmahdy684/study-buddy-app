@@ -199,7 +199,7 @@ const resolvers = {
         const allProfiles = await prisma.matchProfile.findMany({
           include: { availabilities: true },
         });
-        ranked = rankCandidates(source, allProfiles, null, 0);
+        ranked = rankCandidates(source, allProfiles, undefined, 0);
         setCachedMatches(userId, ranked);
       }
 
