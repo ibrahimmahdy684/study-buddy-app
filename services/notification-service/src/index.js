@@ -1,19 +1,13 @@
 import "dotenv/config.js";
+import express from "express";
+import http from "http";
+import cors from "cors";
 import { ApolloServer } from "@apollo/server";
-import { startStandaloneServer } from "@apollo/server/standalone";
+import { expressMiddleware } from "@apollo/server/express4";
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
 import prisma from "./db.js";
 import { createNotificationConsumer, subscribeToEvents } from "./kafka.js";
-
-const PORT = process.env.PORT || 4006;
-
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
-
-const consumer = createNotificationConsumer();
 
 const handleNotificationEvent = async (topic, event) => {
   const { payload } = event;
@@ -118,29 +112,51 @@ const handleNotificationEvent = async (topic, event) => {
 };
 
 const run = async () => {
+  const app = express();
+  const httpServer = http.createServer(app);
+
+  app.get("/health", (_req, res) => res.json({ status: "ok", service: "notification-service" }));
+
+  const server = new ApolloServer({ typeDefs, resolvers, csrfPrevention: false });
+  await server.start();
+
+  app.use(
+    "/",
+    cors({ origin: true, credentials: true }),
+    express.json(),
+    expressMiddleware(server)
+  );
+
+  // Kafka consumer — non-blocking
+  const consumer = createNotificationConsumer();
   if (consumer) {
-    await consumer.connect();
-    await subscribeToEvents(consumer, handleNotificationEvent);
+    try {
+      await consumer.connect();
+      await subscribeToEvents(consumer, handleNotificationEvent);
+    } catch (err) {
+      console.warn("Kafka consumer not available — running without events:", err.message);
+    }
   } else {
     console.log("SKIP_KAFKA_CONSUMER=true — not subscribing to events");
   }
 
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: Number(PORT) },
-  });
+  const port = parseInt(process.env.PORT, 10) || 4006;
+  await new Promise((resolve) => httpServer.listen({ port }, resolve));
+  console.log(`Notification Service ready at http://localhost:${port}`);
 
-  console.log(`🚀 Notification Service ready at ${url}`);
+  const shutdown = async () => {
+    if (consumer) {
+      try { await consumer.disconnect(); } catch {}
+    }
+    await prisma.$disconnect();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 };
 
-const shutdown = async () => {
-  if (consumer) {
-    await consumer.disconnect();
-  }
-  await prisma.$disconnect();
-  process.exit(0);
-};
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-run().catch(console.error);
+run().catch((err) => {
+  console.error("Failed to start notification-service:", err);
+  process.exit(1);
+});
