@@ -4,3 +4,4 @@ prisma/migrations
 
 # Vite drops a timestamped config next to vite.config when it reloads — ignore.
 **/vite.config.*.timestamp-*.mjs
+.claude/
