@@ -96,7 +96,14 @@ const GROUP_SIZE_OPTIONS = [
   { label: '6+ people', value: 6 },
 ];
 
-const STUDY_STYLE_OPTIONS = ['Writing', 'Listening', 'Discussion', 'Quiet Study', 'Visual', 'Problem Solving'];
+const STUDY_STYLE_OPTIONS = [
+  { label: 'Writing', value: 'WRITING' },
+  { label: 'Listening', value: 'LISTENING' },
+  { label: 'Discussion', value: 'DISCUSSION' },
+  { label: 'Quiet Study', value: 'QUIET_STUDY' },
+  { label: 'Visual', value: 'VISUAL' },
+  { label: 'Problem Solving', value: 'PROBLEM_SOLVING' },
+];
 
 export default function StudyPreferences() {
   const navigate = useNavigate();
@@ -122,7 +129,20 @@ export default function StudyPreferences() {
         setStudyMode(profile.studyMode || '');
         setGroupSize(typeof profile.preferredGroupSize === 'number' ? profile.preferredGroupSize : null);
         if (profile.studyStyle) {
-          setStudyStyle(profile.studyStyle.split(',').map(s => s.trim()).filter(Boolean));
+          setStudyStyle(
+            profile.studyStyle
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+              .map((s) => {
+                const match = STUDY_STYLE_OPTIONS.find(
+                  (option) =>
+                    option.value.toLowerCase() === s.toLowerCase() ||
+                    option.label.toLowerCase() === s.toLowerCase()
+                )
+                return match?.value || s.toUpperCase().replace(/\s+/g, '_')
+              })
+          );
         } else {
           setStudyStyle([]);
         }
@@ -303,7 +323,7 @@ export default function StudyPreferences() {
   };
 
   const toggleStudyStyle = (style) => {
-    setStudyStyle(prev => prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]);
+    setStudyStyle((prev) => (prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]));
   };
 
   const handleSubmit = async (e) => {
@@ -415,15 +435,15 @@ export default function StudyPreferences() {
                   Study Style <span className="text-xs text-[#5A5A5A] font-normal">select all that apply</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {STUDY_STYLE_OPTIONS.map(s => (
+                  {STUDY_STYLE_OPTIONS.map((s) => (
                     <button
-                      key={s} type="button" onClick={() => toggleStudyStyle(s)}
+                      key={s.value} type="button" onClick={() => toggleStudyStyle(s.value)}
                       className={`py-2 text-xs rounded-lg border-2 transition-all font-medium ${
-                        studyStyle.includes(s)
+                        studyStyle.includes(s.value)
                           ? 'border-[#C76B4F] bg-[#C76B4F] text-white'
                           : 'border-gray-200 bg-white text-[#2B2B2B] hover:border-[#C76B4F]'
                       }`}
-                    >{s}</button>
+                    >{s.label}</button>
                   ))}
                 </div>
               </div>

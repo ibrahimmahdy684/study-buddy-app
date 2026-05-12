@@ -306,12 +306,6 @@ const ProfileSetup = () => {
             },
           },
         }),
-        updateStudyPreferences({
-          variables: {
-            userId: user.id,
-            input: { studyMode, preferredGroupSize, studyPace, studyStyle },
-          },
-        }),
         setCoursesMutation({
           variables: {
             userId: user.id,
@@ -443,16 +437,6 @@ const ProfileSetup = () => {
             name={name} setName={setName}
             university={university} setUniversity={setUniversity}
             academicYear={academicYear} setAcademicYear={setAcademicYear}
-          />
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 space-y-4">
-          <h2 className="text-lg font-semibold text-[#2B2B2B]">Study Preferences</h2>
-          <StudyPrefsSection
-            studyMode={studyMode} setStudyMode={setStudyMode}
-            preferredGroupSize={preferredGroupSize} setPreferredGroupSize={setPreferredGroupSize}
-            studyPace={studyPace} setStudyPace={setStudyPace}
-            studyStyle={studyStyle} setStudyStyle={setStudyStyle}
           />
         </div>
 

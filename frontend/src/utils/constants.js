@@ -1,7 +1,13 @@
 // API endpoints
 export const API_ENDPOINTS = {
-  GRAPHQL: import.meta.env.VITE_GRAPHQL_ENDPOINT || 'http://localhost:4000/graphql',
-  API_BASE: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000',
+  GRAPHQL:
+    import.meta.env.VITE_GRAPHQL_ENDPOINT ||
+    import.meta.env.REACT_APP_GATEWAY_URL ||
+    'http://localhost:4000/graphql',
+  API_BASE:
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.REACT_APP_GATEWAY_URL?.replace(/\/graphql$/, '') ||
+    'http://localhost:4000',
 }
 
 // Local storage keys

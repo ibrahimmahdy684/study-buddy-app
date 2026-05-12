@@ -148,7 +148,11 @@ services:
 
   # Frontend ──────────────────────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_GRAPHQL_ENDPOINT: http://localhost:4000/graphql
+        VITE_API_BASE_URL: http://localhost:4000
     ports:
     - "3000:3000"
     environment:

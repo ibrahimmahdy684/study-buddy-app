@@ -47,6 +47,15 @@ export const GET_UNREAD_COUNT = gql`
   }
 `
 
+export const GET_USER = gql`
+  query GetUser($userId: String!) {
+    user(userId: $userId) {
+      id
+      name
+    }
+  }
+`
+
 export const GET_MY_CONVERSATIONS = gql`
   query GetMyConversations {
     getMyConversations {
@@ -241,6 +250,7 @@ export const GET_RECOMMENDED_BUDDIES = gql`
   ) {
     recommendedBuddies(userId: $userId, limit: $limit, minScore: $minScore) {
       userId
+      name
       score
       reasons
       sharedCourses

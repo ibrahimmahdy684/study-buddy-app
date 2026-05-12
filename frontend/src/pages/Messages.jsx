@@ -12,6 +12,7 @@ import {
   Smile,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import {
   GET_MY_CONVERSATIONS,
   GET_MESSAGES,
@@ -62,6 +63,16 @@ const MessagesPage = () => {
       ? selectedConversation.participant2Id
       : selectedConversation.participant1Id
   }, [selectedConversation, user?.id])
+
+  const otherParticipantIds = useMemo(
+    () =>
+      conversations
+        .map((conv) => (conv.participant1Id === user?.id ? conv.participant2Id : conv.participant1Id))
+        .concat(otherParticipantId ? [otherParticipantId] : []),
+    [conversations, otherParticipantId, user?.id]
+  )
+
+  const userNames = useUserNames(otherParticipantIds)
 
   const {
     data: messagesData,
@@ -118,10 +129,13 @@ const MessagesPage = () => {
       conv.participant1Id === user?.id
         ? conv.participant2Id
         : conv.participant1Id
+    const otherName = userNames[otherId] || ''
     const last = conv.lastMessage?.content || ''
     const q = searchQuery.toLowerCase()
     return (
-      otherId.toLowerCase().includes(q) || last.toLowerCase().includes(q)
+      otherId.toLowerCase().includes(q) ||
+      otherName.toLowerCase().includes(q) ||
+      last.toLowerCase().includes(q)
     )
   })
 
@@ -212,6 +226,7 @@ const MessagesPage = () => {
                     conv.participant1Id === user?.id
                       ? conv.participant2Id
                       : conv.participant1Id
+                  const otherName = userNames[otherId] || ''
                   const last = conv.lastMessage
                   const isSelected = conv.id === conversationId
 
@@ -224,12 +239,12 @@ const MessagesPage = () => {
                       }`}
                     >
                       <div className="w-12 h-12 bg-gradient-to-br from-[#C76B4F] to-[#E76F51] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {otherId.charAt(0).toUpperCase()}
+                        {(otherName || 'Study buddy').charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="font-semibold text-[#2B2B2B] truncate">
-                            User {otherId.slice(0, 8)}
+                            {otherName || 'Study buddy'}
                           </h3>
                           {last && (
                             <span className="text-xs text-[#5A5A5A] ml-2 flex-shrink-0">
@@ -270,14 +285,14 @@ const MessagesPage = () => {
                       <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="w-10 h-10 bg-gradient-to-br from-[#C76B4F] to-[#E76F51] rounded-full flex items-center justify-center text-white font-bold">
-                      {otherParticipantId.charAt(0).toUpperCase()}
+                      {(userNames[otherParticipantId] || 'Study buddy').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <h2 className="font-semibold text-[#2B2B2B] truncate">
-                        User {otherParticipantId.slice(0, 8)}
+                        {userNames[otherParticipantId] || 'Study buddy'}
                       </h2>
                       <p className="text-xs text-[#5A5A5A] truncate">
-                        {otherParticipantId}
+                        {userNames[otherParticipantId] ? 'Study buddy' : 'Conversation partner'}
                       </p>
                     </div>
                   </div>

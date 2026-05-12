@@ -9,6 +9,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { useUserNames } from '../hooks/useUserNames'
 import {
   GET_NOTIFICATIONS,
   GET_MY_SESSIONS,
@@ -53,6 +54,9 @@ export function Dashboard() {
     errorPolicy: 'all',
   })
 
+  const recommendedBuddies = matchesData?.recommendedBuddies || []
+  const recommendedBuddyNames = useUserNames(recommendedBuddies.map((buddy) => buddy.userId))
+
   const notifications = notificationsData?.notifications || []
   const unreadNotifications = notifications.filter((n) => !n.read)
   const allSessions = sessionsData?.getMySessions || []
@@ -65,7 +69,6 @@ export function Dashboard() {
       return Number.isFinite(dateMs) && dateMs >= Date.now()
     })
     .slice(0, 3)
-  const recommendedBuddies = matchesData?.recommendedBuddies || []
   const profile = profileData?.profile
 
   const profileComplete = Boolean(
@@ -215,10 +218,10 @@ export function Dashboard() {
                     }
                     className="flex items-center gap-4 p-4 bg-[#F4E3C8] rounded-lg hover:bg-[#EDD9B8] transition-colors cursor-pointer"
                   >
-                    <Avatar name={buddy.userId} size="md" />
+                    <Avatar name={buddy.name || recommendedBuddyNames[buddy.userId] || 'Buddy'} size="md" />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-[#2B2B2B] truncate">
-                        Buddy {buddy.userId.slice(0, 8)}
+                        {buddy.name || recommendedBuddyNames[buddy.userId] || 'Study buddy'}
                       </h3>
                       <p className="text-sm text-[#5A5A5A] truncate">
                         {buddy.sharedCourses.length} shared course

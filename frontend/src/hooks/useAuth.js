@@ -12,7 +12,10 @@ export const useAuth = () => {
 
   const logout = useCallback(async () => {
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const apiBase =
+        import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.REACT_APP_GATEWAY_URL?.replace(/\/graphql$/, '') ||
+        'http://localhost:4000'
       await fetch(`${apiBase}/graphql`, {
         method: 'POST',
         credentials: 'include',
