@@ -178,7 +178,7 @@ async function run() {
             if (token && String(token).trim()) {
               const isProd = process.env.NODE_ENV === "production";
               const tokenValue = String(token).trim();
-              const cookie = `token=${tokenValue}; HttpOnly; Path=/; Max-Age=604800; SameSite=${isProd ? "Strict" : "Lax"}${isProd ? "; Secure" : ""}`;
+							const cookie = `token=${tokenValue}; HttpOnly; Path=/; Max-Age=604800; SameSite=${isProd ? "None" : "Lax"}${isProd ? "; Secure" : ""}`;
               contextValue.res.setHeader('Set-Cookie', cookie);
               console.log('[gateway] ✓ Set auth cookie from token');
             }
