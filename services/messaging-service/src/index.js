@@ -149,6 +149,10 @@ const run = async () => {
 		}),
 	);
 
+	app.get("/", (_req, res) => {
+		res.status(200).json({ status: "ok", service: "messaging-service" });
+	});
+
 	app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 	await new Promise((resolve) => httpServer.listen({ port: PORT }, resolve));
