@@ -23,7 +23,6 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
-    "express": "^5.2.1",
     "graphql": "^16.13.2",
     "jsonwebtoken": "^9.0.3",
     "kafkajs": "^2.2.4",
