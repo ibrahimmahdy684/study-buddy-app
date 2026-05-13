@@ -3,7 +3,7 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@apollo/server/express4";
+import { expressMiddleware } from "@as-integrations/express4";
 import typeDefs from "./schema.js";
 import resolvers from "./resolvers.js";
 import prisma from "./db.js";

@@ -3,7 +3,7 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@apollo/server/express4";
+import { expressMiddleware } from "@as-integrations/express4";
 import { parse } from "cookie";
 import jwt from "jsonwebtoken";
 import typeDefs from "./schema.js";
