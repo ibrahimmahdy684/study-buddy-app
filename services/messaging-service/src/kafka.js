@@ -3,10 +3,16 @@ import { randomUUID } from "crypto";
 
 export const TOPIC_MESSAGE_SENT = "MessageSent";
 
-const kafka = createKafkaClient(process.env.KAFKA_CLIENT_ID || "messaging-service");
+const hasBrokers = !!(process.env.KAFKA_BROKER || "").trim();
+const kafka = hasBrokers
+	? createKafkaClient(process.env.KAFKA_CLIENT_ID || "messaging-service")
+	: null;
 
 export function createKafkaPublisher() {
-	if (process.env.SKIP_KAFKA === "true") {
+	if (process.env.SKIP_KAFKA === "true" || !hasBrokers) {
+		if (!hasBrokers) {
+			console.warn("[messaging] KAFKA_BROKER not set — running without Kafka");
+		}
 		return {
 			publishMessageSent: async () => randomUUID(),
 			disconnect: async () => {},
@@ -25,23 +31,26 @@ export function createKafkaPublisher() {
 
 	const publishMessageSent = async (messagePayload, correlationId) => {
 		const cid = correlationId || randomUUID();
-		await ensureConnected();
-
-		await producer.send({
-			topic: TOPIC_MESSAGE_SENT,
-			messages: [
-				{
-					key: String(messagePayload.conversationId),
-					value: JSON.stringify({
-						eventName: TOPIC_MESSAGE_SENT,
-						timestamp: new Date().toISOString(),
-						producerService: "messaging-service",
-						correlationId: cid,
-						payload: messagePayload,
-					}),
-				},
-			],
-		});
+		try {
+			await ensureConnected();
+			await producer.send({
+				topic: TOPIC_MESSAGE_SENT,
+				messages: [
+					{
+						key: String(messagePayload.conversationId),
+						value: JSON.stringify({
+							eventName: TOPIC_MESSAGE_SENT,
+							timestamp: new Date().toISOString(),
+							producerService: "messaging-service",
+							correlationId: cid,
+							payload: messagePayload,
+						}),
+					},
+				],
+			});
+		} catch (err) {
+			console.error("[messaging] Kafka publish failed:", err.message);
+		}
 
 		return cid;
 	};

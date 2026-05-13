@@ -1,9 +1,13 @@
 import { createKafkaClient } from "./createKafkaClient.js";
 
-const kafka = createKafkaClient("notification-service");
+const hasBrokers = !!(process.env.KAFKA_BROKER || "").trim();
+const kafka = hasBrokers ? createKafkaClient("notification-service") : null;
 
 function createNotificationConsumer() {
-  if (process.env.SKIP_KAFKA_CONSUMER === "true") {
+  if (process.env.SKIP_KAFKA_CONSUMER === "true" || !hasBrokers) {
+    if (!hasBrokers) {
+      console.warn("[notification] KAFKA_BROKER not set — running without Kafka consumer");
+    }
     return null;
   }
   return kafka.consumer({ groupId: "notification-service-group" });
