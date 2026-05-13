@@ -35,6 +35,7 @@ const run = async () => {
     typeDefs,
     resolvers: resolversWithScalars,
     csrfPrevention: false,
+    introspection: true,
   });
 
   await server.start();

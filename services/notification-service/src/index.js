@@ -117,7 +117,7 @@ const run = async () => {
 
   app.get("/health", (_req, res) => res.json({ status: "ok", service: "notification-service" }));
 
-  const server = new ApolloServer({ typeDefs, resolvers, csrfPrevention: false });
+  const server = new ApolloServer({ typeDefs, resolvers, csrfPrevention: false, introspection: true });
   await server.start();
 
   app.use(

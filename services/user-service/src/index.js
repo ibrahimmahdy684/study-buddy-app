@@ -20,6 +20,7 @@ const start = async () => {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    introspection: true,
     context: ({ req, res }) => buildContext(req, res),
   });
 

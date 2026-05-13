@@ -117,6 +117,7 @@ const run = async () => {
 
 	const apollo = new ApolloServer({
 		schema,
+			introspection: true,
 		plugins: [
 			ApolloServerPluginDrainHttpServer({ httpServer }),
 			{

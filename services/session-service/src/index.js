@@ -54,6 +54,7 @@ const run = async () => {
     typeDefs,
     resolvers,
     csrfPrevention: false,
+    introspection: true,
     formatError: (error) => {
       console.error("GraphQL Error:", error);
       return error;
