@@ -8,9 +8,7 @@ import { resolvers } from './resolvers.js';
 import { connectProducer, disconnectProducer } from './kafka/producer.js';
 import { startConsumer, disconnectConsumer }   from './kafka/consumer.js';
 import prisma from './db.js';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: '../.env' });
+import 'dotenv/config';
 
 const start = async () => {
   await prisma.$connect();
