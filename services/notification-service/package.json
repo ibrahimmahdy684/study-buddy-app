@@ -2,6 +2,7 @@
   "name": "notification-service",
   "version": "1.0.0",
   "description": "Notification service for Study Buddy Matcher",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

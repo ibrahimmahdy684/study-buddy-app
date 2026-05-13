@@ -8,6 +8,6 @@ RUN npm install
 COPY . .
 RUN npx prisma generate
 
-EXPOSE 4003
+EXPOSE 4006
 
 CMD ["sh", "-c", "npx prisma db push --skip-generate && exec node src/index.js"]
