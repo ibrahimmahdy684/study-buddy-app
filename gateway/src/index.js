@@ -21,19 +21,6 @@ function shouldAllowPartialSchema() {
 	return String(process.env.ALLOW_PARTIAL_SCHEMA || "true").toLowerCase() === "true";
 }
 
-function getAllowedOrigins() {
-	const configuredOrigins = String(process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || "")
-		.split(",")
-		.map((origin) => origin.trim())
-		.filter(Boolean);
-
-	if (configuredOrigins.length > 0) {
-		return configuredOrigins;
-	}
-
-	return ["http://localhost:3000"];
-}
-
 async function makeRemoteSchema(service) {
 	const executor = buildHTTPExecutor({
 		endpoint: service.url,
@@ -229,7 +216,7 @@ async function run() {
   app.use(
     "/graphql",
     cors({
-			origin: getAllowedOrigins(),
+      origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
       credentials: true,
     }),
     express.json(),
